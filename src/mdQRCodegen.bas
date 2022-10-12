@@ -118,7 +118,8 @@ Private NUM_ERROR_CORRECTION_BLOCKS(0 To 3, 0 To 40) As Long
 '=========================================================================
 
 Public Function QRCodegenBarcode(TextOrByteArray As Variant, _
-            Optional ByVal clrFore As OLE_COLOR = vbBlack, _
+            Optional ByVal ForeColor As OLE_COLOR = vbBlack, _
+            Optional ByVal ModuleSize As Long = 10, _
             Optional ByVal Ecl As QRCodegenEcc = QRCodegenEcc_LOW, _
             Optional ByVal MinVersion As Long = VERSION_MIN, _
             Optional ByVal MaxVersion As Long = VERSION_MAX, _
@@ -127,7 +128,7 @@ Public Function QRCodegenBarcode(TextOrByteArray As Variant, _
     Dim baQrCode()      As Byte
     
     If QRCodegenEncode(TextOrByteArray, baQrCode, Ecl, MinVersion, MaxVersion, Mask, BoostEcl) Then
-        Set QRCodegenBarcode = QRCodegenConvertToPicture(baQrCode, clrFore)
+        Set QRCodegenBarcode = QRCodegenConvertToPicture(baQrCode, ForeColor, ModuleSize)
     End If
 End Function
 
@@ -286,9 +287,9 @@ QH:
 End Function
 
 Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
-            Optional ByVal clrFore As OLE_COLOR = vbBlack) As StdPicture
+            Optional ByVal ForeColor As OLE_COLOR = vbBlack, _
+            Optional ByVal ModuleSize As Long = 10) As StdPicture
     Const WHITE_BRUSH   As Long = 0
-    Const LNG_STEP      As Long = 500
     Const vbPicTypeEMetafile As Long = 4
     Dim lQrSize         As Long
     Dim lY              As Long
@@ -303,17 +304,17 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     On Error GoTo EH
     lQrSize = QRCodegenGetSize(baQrCode)
     hDC = CreateEnhMetaFile(0, 0, 0, 0)
-    uRect.Right = lQrSize * LNG_STEP
-    uRect.Bottom = lQrSize * LNG_STEP
+    uRect.Right = lQrSize * ModuleSize
+    uRect.Bottom = lQrSize * ModuleSize
     Call FillRect(hDC, uRect, GetStockObject(WHITE_BRUSH))
-    hBrush = CreateSolidBrush(clrFore)
+    hBrush = CreateSolidBrush(ForeColor)
     For lY = 0 To lQrSize - 1
         For lX = 0 To lQrSize - 1
             If QRCodegenGetModule(baQrCode, lX, lY) Then
-                uRect.Left = lX * LNG_STEP
-                uRect.Right = uRect.Left + LNG_STEP
-                uRect.Top = lY * LNG_STEP
-                uRect.Bottom = uRect.Top + LNG_STEP
+                uRect.Left = lX * ModuleSize
+                uRect.Right = uRect.Left + ModuleSize
+                uRect.Top = lY * ModuleSize
+                uRect.Bottom = uRect.Top + ModuleSize
                 Call FillRect(hDC, uRect, hBrush)
             End If
         Next

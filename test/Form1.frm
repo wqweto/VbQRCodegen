@@ -5,6 +5,7 @@ Begin VB.Form Form1
    ClientLeft      =   108
    ClientTop       =   456
    ClientWidth     =   7320
+   KeyPreview      =   -1  'True
    LinkTopic       =   "Form1"
    ScaleHeight     =   7812
    ScaleWidth      =   7320
@@ -42,6 +43,13 @@ Attribute VB_Exposed = False
 '=========================================================================
 Option Explicit
 DefObj A-Z
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    If KeyCode = 67 And Shift = vbCtrlMask Then
+        Clipboard.Clear
+        Clipboard.SetData Image1.Picture
+    End If
+End Sub
 
 Private Sub Form_Load()
     Text1_Change
