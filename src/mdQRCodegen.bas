@@ -12,7 +12,7 @@ Attribute VB_Name = "mdQRCodegen"
 Option Explicit
 DefObj A-Z
 
-#Const HasPtrSafe = (VBA7 <> 0)
+#Const HasPtrSafe = (VBA7 <> 0) Or (TWINBASIC <> 0)
 
 '=========================================================================
 ' Public enums
@@ -65,6 +65,7 @@ Private Declare PtrSafe Function OleCreatePictureIndirect Lib "oleaut32" (lpPict
 Private Declare PtrSafe Function FillRect Lib "user32" (ByVal hDC As LongPtr, lpRect As RECT, ByVal hBrush As LongPtr) As Long
 Private Declare PtrSafe Function CreateSolidBrush Lib "gdi32" (ByVal crColor As Long) As LongPtr
 Private Declare PtrSafe Function DeleteObject Lib "gdi32" (ByVal hObject As LongPtr) As Long
+Private Declare PtrSafe Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As LongPtr, ByVal cchWideChar As Long, lpMultiByteStr As Any, ByVal cchMultiByte As LongPtr, ByVal lpDefaultChar As LongPtr, ByVal lpUsedDefaultChar As LongPtr) As Long
 #Else
 Private Enum LongPtr
     [_]
@@ -77,6 +78,7 @@ Private Declare Function OleCreatePictureIndirect Lib "oleaut32" (lpPictDesc As 
 Private Declare Function FillRect Lib "user32" (ByVal hDC As LongPtr, lpRect As RECT, ByVal hBrush As LongPtr) As Long
 Private Declare Function CreateSolidBrush Lib "gdi32" (ByVal crColor As Long) As LongPtr
 Private Declare Function DeleteObject Lib "gdi32" (ByVal hObject As LongPtr) As Long
+Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As LongPtr, ByVal cchWideChar As Long, lpMultiByteStr As Any, ByVal cchMultiByte As LongPtr, ByVal lpDefaultChar As LongPtr, ByVal lpUsedDefaultChar As LongPtr) As Long
 #End If
 
 Private Type RECT
@@ -170,8 +172,7 @@ Public Function QRCodegenEncode(TextOrByteArray As Variant, baQrCode() As Byte, 
             End If
             uSegments(0) = QRCodegenMakeAlphanumeric(sText)
         Else
-            '--- ToDo: Try to use UTF-8 here
-            baData = StrConv(sText, vbFromUnicode)
+            baData = pvToUtf8Array(sText)
             lDataLen = UBound(baData) + 1
             If QRCodegenCalcSegmentBufferSize(QRCodegenMode_BYTE, lDataLen) > lBufLen Then
                 GoTo QH
@@ -358,6 +359,7 @@ Public Function QRCodegenDebugDump(baQrCode() As Byte) As String
         For lX = 0 To lQrSize - 1
             aRows(lY) = aRows(lY) & IIf(QRCodegenGetModule(baQrCode, lX, lY), "##", "  ")
         Next
+        aRows(lY) = RTrim$(aRows(lY))
     Next
     QRCodegenDebugDump = Join(aRows, vbCrLf)
 End Function
@@ -577,29 +579,25 @@ End Function
 
 Private Function pvNumCharCountBits(ByVal eMode As QRCodegenMode, ByVal lVersion As Long) As Long
     Dim lIdx            As Long
-    Dim vTemp           As Variant
     
-    lIdx = (lVersion + 7) \ 17
+    lIdx = (lVersion + 7) \ 17 + 1
     Select Case eMode
     Case QRCodegenMode_NUMERIC
-        vTemp = Array(10, 12, 14)
+        pvNumCharCountBits = Choose(lIdx, 10, 12, 14)
     Case QRCodegenMode_ALPHANUMERIC
-        vTemp = Array(9, 11, 13)
+        pvNumCharCountBits = Choose(lIdx, 9, 11, 13)
     Case QRCodegenMode_BYTE
-        vTemp = Array(8, 16, 16)
+        pvNumCharCountBits = Choose(lIdx, 8, 16, 16)
     Case QRCodegenMode_KANJI
-        vTemp = Array(0, 10, 12)
+        pvNumCharCountBits = Choose(lIdx, 0, 10, 12)
     Case QRCodegenMode_ECI
-        Exit Function
+        pvNumCharCountBits = 0
     Case Else
         Debug.Assert False
     End Select
-    pvNumCharCountBits = vTemp(lIdx)
 End Function
 
 Private Sub pvAddEccAndInterleave(baData() As Byte, ByVal lVersion As Long, ByVal eEcl As QRCodegenEcc, baResult() As Byte)
-    Debug.Assert VERSION_MIN <= lVersion And lVersion <= VERSION_MAX
-    Debug.Assert QRCodegenEcc_LOW <= eEcl And eEcl <= QRCodegenEcc_HIGH
     Dim lNumBlocks      As Long
     Dim lBlockEccLen    As Long
     Dim lRawCodewords   As Long
@@ -614,6 +612,8 @@ Private Sub pvAddEccAndInterleave(baData() As Byte, ByVal lVersion As Long, ByVa
     Dim lJdx            As Long
     Dim lKdx            As Long
     
+    Debug.Assert VERSION_MIN <= lVersion And lVersion <= VERSION_MAX
+    Debug.Assert QRCodegenEcc_LOW <= eEcl And eEcl <= QRCodegenEcc_HIGH
     lNumBlocks = NUM_ERROR_CORRECTION_BLOCKS(eEcl, lVersion)
     lBlockEccLen = ECC_CODEWORDS_PER_BLOCK(eEcl, lVersion)
     lRawCodewords = pvGetNumRawDataModules(lVersion) \ 8
@@ -782,7 +782,7 @@ Private Sub pvDrawLightFunctionModules(ByVal lVersion As Long, baQrCode() As Byt
         Next
     Next
     '--- Draw version blocks
-    If lVersion > 7 Then
+    If lVersion >= 7 Then
         '--- Calculate error correction code and pack bits
         lRem = lVersion
         For lIdx = 0 To 11
@@ -846,7 +846,7 @@ Private Function pvGetAlignmentPatternPositions(ByVal lVersion As Long, baResult
     
     If lVersion > 1 Then
         lNumAlign = lVersion \ 7 + 2
-        lStep = IIf(lVersion = 32, 26, (lVersion * 4 + lNumAlign * 2 + 1) \ (lNumAlign * 2 - 2) * 2)
+        lStep = IIf(lVersion = 32, 26, ((lVersion * 4 + lNumAlign * 2 + 1) \ (lNumAlign * 2 - 2)) * 2)
         lPos = lVersion * 4 + 10
         For lIdx = lNumAlign - 1 To 1 Step -1
             baResult(lIdx) = lPos
@@ -1138,3 +1138,18 @@ Private Sub pvAppendBitsToBuffer(ByVal lVal As Long, ByVal lNumBits As Long, baB
         lBitLen = lBitLen + 1
     Next
 End Sub
+
+Private Function pvToUtf8Array(sText As String) As Byte()
+    Const CP_UTF8       As Long = 65001
+    Dim baRetVal()      As Byte
+    Dim lSize           As Long
+    
+    lSize = WideCharToMultiByte(CP_UTF8, 0, StrPtr(sText), Len(sText), ByVal 0, 0, 0, 0)
+    If lSize > 0 Then
+        ReDim baRetVal(0 To lSize - 1) As Byte
+        Call WideCharToMultiByte(CP_UTF8, 0, StrPtr(sText), Len(sText), baRetVal(0), lSize, 0, 0)
+    Else
+        baRetVal = vbNullString
+    End If
+    pvToUtf8Array = baRetVal
+End Function
