@@ -1,29 +1,37 @@
 VERSION 5.00
 Begin VB.Form Form1 
    Caption         =   "Form1"
-   ClientHeight    =   7812
+   ClientHeight    =   8736
    ClientLeft      =   108
    ClientTop       =   456
-   ClientWidth     =   7320
+   ClientWidth     =   8304
    KeyPreview      =   -1  'True
    LinkTopic       =   "Form1"
-   ScaleHeight     =   7812
-   ScaleWidth      =   7320
+   ScaleHeight     =   8736
+   ScaleWidth      =   8304
    StartUpPosition =   3  'Windows Default
+   Begin VB.CheckBox Check1 
+      Caption         =   "Square"
+      Height          =   192
+      Left            =   6300
+      TabIndex        =   1
+      Top             =   252
+      Width           =   936
+   End
    Begin VB.TextBox Text1 
       Height          =   348
       Left            =   252
       TabIndex        =   0
       Text            =   "http://www.vbforums.com"
       Top             =   168
-      Width           =   6480
+      Width           =   5976
    End
    Begin VB.Image Image1 
-      Height          =   6480
+      Height          =   7656
       Left            =   252
       Stretch         =   -1  'True
       Top             =   756
-      Width           =   6480
+      Width           =   7656
    End
 End
 Attribute VB_Name = "Form1"
@@ -55,6 +63,23 @@ Private Sub Form_Load()
     Text1_Change
 End Sub
 
+Private Sub Form_Resize()
+    Dim lWidth          As Long
+    Dim lHeight         As Long
+    
+    lWidth = ScaleWidth - Image1.Left - Image1.Left
+    lHeight = ScaleHeight - Image1.Top - Image1.Left
+    If lWidth > lHeight Then
+        lWidth = lHeight
+    End If
+    Image1.Width = lWidth
+    Image1.Height = lWidth
+End Sub
+
 Private Sub Text1_Change()
-    Set Image1.Picture = QRCodegenBarcode(Text1.Text)
+    Set Image1.Picture = QRCodegenBarcode(Text1.Text, SquareModules:=(Check1.Value = vbChecked))
+End Sub
+
+Private Sub Check1_Click()
+    Text1_Change
 End Sub

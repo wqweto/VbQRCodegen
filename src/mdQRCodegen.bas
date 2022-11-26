@@ -66,6 +66,18 @@ Private Declare PtrSafe Function FillRect Lib "user32" (ByVal hDC As LongPtr, lp
 Private Declare PtrSafe Function CreateSolidBrush Lib "gdi32" (ByVal crColor As Long) As LongPtr
 Private Declare PtrSafe Function DeleteObject Lib "gdi32" (ByVal hObject As LongPtr) As Long
 Private Declare PtrSafe Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As LongPtr, ByVal cchWideChar As Long, lpMultiByteStr As Any, ByVal cchMultiByte As LongPtr, ByVal lpDefaultChar As LongPtr, ByVal lpUsedDefaultChar As LongPtr) As Long
+Private Declare PtrSafe Function RoundRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long, ByVal X3 As Long, ByVal Y3 As Long) As Long
+Private Declare PtrSafe Function SelectObject Lib "gdi32" (ByVal hDC As LongPtr, ByVal hObject As LongPtr) As LongPtr
+Private Declare PtrSafe Function SHCreateMemStream Lib "shlwapi" Alias "#12" (pInit As Any, ByVal cbInit As Long) As stdole.IUnknown
+Private Declare PtrSafe Function DispCallFunc Lib "oleaut32" (ByVal pvInstance As LongPtr, ByVal oVft As LongPtr, ByVal lCc As Long, ByVal vtReturn As VbVarType, ByVal cActuals As Long, prgVt As Any, prgpVarg As Any, pvargResult As Variant) As Long
+Private Declare PtrSafe Function IntersectClipRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As Long
+Private Declare PtrSafe Function SelectClipRgn Lib "gdi32" (ByVal hDC As LongPtr, ByVal hRgn As LongPtr) As Long
+Private Declare PtrSafe Function CreateCompatibleDC Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
+Private Declare PtrSafe Function DeleteDC Lib "gdi32" (ByVal hDC As LongPtr) As Long
+Private Declare PtrSafe Function CreateDIBSection Lib "gdi32" (ByVal hDC As LongPtr, lpBitsInfo As Any, ByVal wUsage As Long, lpBits As LongPtr, ByVal hSection As LongPtr, ByVal dwOffset As Long) As LongPtr
+Private Declare PtrSafe Function SetStretchBltMode Lib "gdi32" (ByVal hDC As LongPtr, ByVal nStretchMode As Long) As Long
+Private Declare PtrSafe Function StretchBlt Lib "gdi32" (ByVal hDC As LongPtr, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hdcSrc As LongPtr, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
+Private Declare PtrSafe Function GetDeviceCaps Lib "gdi32" (ByVal hDC As LongPtr, ByVal nIndex As Long) As Long
 #Else
 Private Enum LongPtr
     [_]
@@ -79,6 +91,18 @@ Private Declare Function FillRect Lib "user32" (ByVal hDC As LongPtr, lpRect As 
 Private Declare Function CreateSolidBrush Lib "gdi32" (ByVal crColor As Long) As LongPtr
 Private Declare Function DeleteObject Lib "gdi32" (ByVal hObject As LongPtr) As Long
 Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As LongPtr, ByVal cchWideChar As Long, lpMultiByteStr As Any, ByVal cchMultiByte As LongPtr, ByVal lpDefaultChar As LongPtr, ByVal lpUsedDefaultChar As LongPtr) As Long
+Private Declare Function RoundRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long, ByVal X3 As Long, ByVal Y3 As Long) As Long
+Private Declare Function SelectObject Lib "gdi32" (ByVal hDC As LongPtr, ByVal hObject As LongPtr) As LongPtr
+Private Declare Function SHCreateMemStream Lib "shlwapi" Alias "#12" (pInit As Any, ByVal cbInit As Long) As stdole.IUnknown
+Private Declare Function DispCallFunc Lib "oleaut32" (ByVal pvInstance As LongPtr, ByVal oVft As LongPtr, ByVal lCc As Long, ByVal vtReturn As VbVarType, ByVal cActuals As Long, prgVt As Any, prgpVarg As Any, pvargResult As Variant) As Long
+Private Declare Function IntersectClipRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As Long
+Private Declare Function SelectClipRgn Lib "gdi32" (ByVal hDC As LongPtr, ByVal hRgn As LongPtr) As Long
+Private Declare Function CreateCompatibleDC Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
+Private Declare Function DeleteDC Lib "gdi32" (ByVal hDC As LongPtr) As Long
+Private Declare Function CreateDIBSection Lib "gdi32" (ByVal hDC As LongPtr, lpBitsInfo As Any, ByVal wUsage As Long, lpBits As LongPtr, ByVal hSection As LongPtr, ByVal dwOffset As Long) As LongPtr
+Private Declare Function SetStretchBltMode Lib "gdi32" (ByVal hDC As LongPtr, ByVal nStretchMode As Long) As Long
+Private Declare Function StretchBlt Lib "gdi32" (ByVal hDC As LongPtr, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hdcSrc As LongPtr, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
+Private Declare Function GetDeviceCaps Lib "gdi32" (ByVal hDC As LongPtr, ByVal nIndex As Long) As Long
 #End If
 
 Private Type RECT
@@ -93,6 +117,20 @@ Private Type PICTDESC
     Type                As Long
     hBmpOrIcon          As LongPtr
     hPal                As LongPtr
+End Type
+
+Private Type BITMAPINFOHEADER
+    biSize              As Long
+    biWidth             As Long
+    biHeight            As Long
+    biPlanes            As Integer
+    biBitCount          As Integer
+    biCompression       As Long
+    biSizeImage         As Long
+    biXPelsPerMeter     As Long
+    biYPelsPerMeter     As Long
+    biClrUsed           As Long
+    biClrImportant      As Long
 End Type
 
 '=========================================================================
@@ -112,6 +150,8 @@ Private Const ALPHANUMERIC_CHARSET      As String = "0123456789ABCDEFGHIJKLMNOPQ
 Private LNG_POW2(0 To 31)                            As Long
 Private ECC_CODEWORDS_PER_BLOCK(0 To 3, 0 To 40)     As Long
 Private NUM_ERROR_CORRECTION_BLOCKS(0 To 3, 0 To 40) As Long
+Private IID_IPicture(0 To 3)                         As Long '--- 7BF80980-BF32-101A-8BBB-00AA00300CAB
+Private IID_IPersistStream(0 To 3)                   As Long '--- 00000109-0000-0000-C000-000000000046
 
 '=========================================================================
 ' Functions
@@ -120,6 +160,7 @@ Private NUM_ERROR_CORRECTION_BLOCKS(0 To 3, 0 To 40) As Long
 Public Function QRCodegenBarcode(TextOrByteArray As Variant, _
             Optional ByVal ForeColor As OLE_COLOR = vbBlack, _
             Optional ByVal ModuleSize As Long = 10, _
+            Optional ByVal SquareModules As Boolean, _
             Optional ByVal Ecl As QRCodegenEcc = QRCodegenEcc_LOW, _
             Optional ByVal MinVersion As Long = VERSION_MIN, _
             Optional ByVal MaxVersion As Long = VERSION_MAX, _
@@ -128,7 +169,7 @@ Public Function QRCodegenBarcode(TextOrByteArray As Variant, _
     Dim baQrCode()      As Byte
     
     If QRCodegenEncode(TextOrByteArray, baQrCode, Ecl, MinVersion, MaxVersion, Mask, BoostEcl) Then
-        Set QRCodegenBarcode = QRCodegenConvertToPicture(baQrCode, ForeColor, ModuleSize)
+        Set QRCodegenBarcode = QRCodegenConvertToPicture(baQrCode, ForeColor, ModuleSize, SquareModules)
     End If
 End Function
 
@@ -288,55 +329,332 @@ End Function
 
 Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
             Optional ByVal ForeColor As OLE_COLOR = vbBlack, _
-            Optional ByVal ModuleSize As Long = 10) As StdPicture
+            Optional ByVal ModuleSize As Long = 10, _
+            Optional ByVal SquareModules As Boolean) As StdPicture
     Const WHITE_BRUSH   As Long = 0
+    Const NULL_PEN      As Long = 8
     Const vbPicTypeEMetafile As Long = 4
     Dim lQrSize         As Long
     Dim lY              As Long
     Dim lX              As Long
     Dim hDC             As LongPtr
     Dim uRect           As RECT
-    Dim hBrush          As LongPtr
+    Dim hWhiteBrush     As LongPtr
+    Dim hBlackBrush     As LongPtr
+    Dim hPrevBrush      As LongPtr
+    Dim hPrevPen        As LongPtr
+    Dim bHasLeft        As Boolean
+    Dim bHasUp          As Boolean
+    Dim bHasRight       As Boolean
+    Dim bHasDown        As Boolean
+    Dim bHasLU          As Boolean
+    Dim bHasLD          As Boolean
+    Dim bHasRU          As Boolean
+    Dim bHasRD          As Boolean
+    Dim bHasDiag        As Boolean
     Dim uDesc           As PICTDESC
-    Dim aGUID(0 To 3)   As Long
+    Dim hResult         As Long
     Dim vErr            As Variant
     
     On Error GoTo EH
     lQrSize = QRCodegenGetSize(baQrCode)
     hDC = CreateEnhMetaFile(0, 0, 0, 0)
-    uRect.Right = lQrSize * ModuleSize
-    uRect.Bottom = lQrSize * ModuleSize
-    Call FillRect(hDC, uRect, GetStockObject(WHITE_BRUSH))
-    hBrush = CreateSolidBrush(ForeColor)
+    uRect.Right = 1 + lQrSize * ModuleSize + 2
+    uRect.Bottom = 1 + lQrSize * ModuleSize + 2
+    hWhiteBrush = GetStockObject(WHITE_BRUSH)
+    Call FillRect(hDC, uRect, hWhiteBrush)
+    hBlackBrush = CreateSolidBrush(ForeColor)
+    hPrevBrush = SelectObject(hDC, hBlackBrush)
+    hPrevPen = SelectObject(hDC, GetStockObject(NULL_PEN))
     For lY = 0 To lQrSize - 1
         For lX = 0 To lQrSize - 1
-            If QRCodegenGetModule(baQrCode, lX, lY) Then
-                uRect.Left = lX * ModuleSize
-                uRect.Right = uRect.Left + ModuleSize
-                uRect.Top = lY * ModuleSize
-                uRect.Bottom = uRect.Top + ModuleSize
-                Call FillRect(hDC, uRect, hBrush)
+            uRect.Left = 1 + lX * ModuleSize
+            uRect.Right = 1 + uRect.Left + ModuleSize - 1
+            uRect.Top = 1 + lY * ModuleSize
+            uRect.Bottom = 1 + uRect.Top + ModuleSize - 1
+            If Not SquareModules Then
+                bHasLeft = QRCodegenGetModule(baQrCode, lX - 1, lY)
+                bHasUp = QRCodegenGetModule(baQrCode, lX, lY - 1)
+                bHasRight = QRCodegenGetModule(baQrCode, lX + 1, lY)
+                bHasDown = QRCodegenGetModule(baQrCode, lX, lY + 1)
+                bHasLU = QRCodegenGetModule(baQrCode, lX - 1, lY - 1)
+                bHasLD = QRCodegenGetModule(baQrCode, lX - 1, lY + 1)
+                bHasRU = QRCodegenGetModule(baQrCode, lX + 1, lY - 1)
+                bHasRD = QRCodegenGetModule(baQrCode, lX + 1, lY + 1)
+                bHasDiag = bHasLU Or bHasLD Or bHasRU Or bHasRD
+            End If
+            If SquareModules Or Abs(bHasLeft + bHasUp + bHasRight + bHasDown) >= 3 Then
+                If QRCodegenGetModule(baQrCode, lX, lY) Then
+                    Call FillRect(hDC, uRect, hBlackBrush)
+                End If
+            Else
+                If QRCodegenGetModule(baQrCode, lX, lY) Then
+                    Call FillRect(hDC, uRect, hWhiteBrush)
+                    Call SelectObject(hDC, hBlackBrush)
+                    If Not bHasDiag And Not bHasLeft And Not bHasUp And bHasRight And bHasDown Then
+                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
+                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + ModuleSize + 1, uRect.Bottom + ModuleSize + 1, ModuleSize * 2, ModuleSize * 2)
+                        Call SelectClipRgn(hDC, 0)
+                    ElseIf Not bHasDiag And bHasLeft And Not bHasUp And Not bHasRight And bHasDown Then
+                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
+                        Call RoundRect(hDC, uRect.Left - ModuleSize, uRect.Top, uRect.Right + 1, uRect.Bottom + ModuleSize + 1, ModuleSize * 2, ModuleSize * 2)
+                        Call SelectClipRgn(hDC, 0)
+                    ElseIf Not bHasDiag And Not bHasLeft And bHasUp And bHasRight And Not bHasDown Then
+                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
+                        Call RoundRect(hDC, uRect.Left, uRect.Top - ModuleSize, uRect.Right + ModuleSize + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                        Call SelectClipRgn(hDC, 0)
+                    ElseIf Not bHasDiag And bHasLeft And bHasUp And Not bHasRight And Not bHasDown Then
+                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
+                        Call RoundRect(hDC, uRect.Left - ModuleSize, uRect.Top - ModuleSize, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                        Call SelectClipRgn(hDC, 0)
+                    Else
+                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2)
+                        If Not bHasLeft And Not bHasUp Then
+                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
+                        Else
+                            Call FillRect(hDC, uRect, hBlackBrush)
+                        End If
+                        Call SelectClipRgn(hDC, 0)
+                        Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top, uRect.Right, uRect.Top + ModuleSize \ 2)
+                        If Not bHasRight And Not bHasUp Then
+                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
+                        Else
+                            Call FillRect(hDC, uRect, hBlackBrush)
+                        End If
+                        Call SelectClipRgn(hDC, 0)
+                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top + ModuleSize \ 2, uRect.Left + ModuleSize \ 2, uRect.Bottom)
+                        If Not bHasLeft And Not bHasDown Then
+                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize + 1, ModuleSize + 1)
+                        Else
+                            Call FillRect(hDC, uRect, hBlackBrush)
+                        End If
+                        Call SelectClipRgn(hDC, 0)
+                        Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2, uRect.Right, uRect.Bottom)
+                        If Not bHasRight And Not bHasDown Then
+                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize + 1, ModuleSize + 1)
+                        Else
+                            Call FillRect(hDC, uRect, hBlackBrush)
+                        End If
+                        Call SelectClipRgn(hDC, 0)
+                    End If
+                Else
+                    Call FillRect(hDC, uRect, hBlackBrush)
+                    Call SelectObject(hDC, hWhiteBrush)
+                    Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2)
+                    If bHasLU And bHasLeft And bHasUp Then
+                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                    Else
+                        Call FillRect(hDC, uRect, hWhiteBrush)
+                    End If
+                    Call SelectClipRgn(hDC, 0)
+                    Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top, uRect.Right, uRect.Top + ModuleSize \ 2)
+                    If bHasRU And bHasRight And bHasUp Then
+                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                    Else
+                        Call FillRect(hDC, uRect, hWhiteBrush)
+                    End If
+                    Call SelectClipRgn(hDC, 0)
+                    Call IntersectClipRect(hDC, uRect.Left, uRect.Top + ModuleSize \ 2, uRect.Left + ModuleSize \ 2, uRect.Bottom)
+                    If bHasLD And bHasLeft And bHasDown Then
+                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                    Else
+                        Call FillRect(hDC, uRect, hWhiteBrush)
+                    End If
+                    Call SelectClipRgn(hDC, 0)
+                    Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2, uRect.Right, uRect.Bottom)
+                    If bHasRD And bHasRight And bHasDown Then
+                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                    Else
+                        Call FillRect(hDC, uRect, hWhiteBrush)
+                    End If
+                    Call SelectClipRgn(hDC, 0)
+                End If
             End If
         Next
     Next
-    '--- fill struct
+    If hPrevBrush <> 0 Then
+        Call SelectObject(hDC, hPrevBrush)
+        hPrevBrush = 0
+    End If
+    If hPrevPen <> 0 Then
+        Call SelectObject(hDC, hPrevPen)
+        hPrevPen = 0
+    End If
     With uDesc
         .Size = LenB(uDesc)
         .Type = vbPicTypeEMetafile
         .hBmpOrIcon = CloseEnhMetaFile(hDC)
     End With
+    If IID_IPicture(0) = 0 Then
+        IID_IPicture(0) = &H7BF80980: IID_IPicture(1) = &H101ABF32: IID_IPicture(2) = &HAA00BB8B: IID_IPicture(3) = &HAB0C3000
+    End If
+    hResult = OleCreatePictureIndirect(uDesc, IID_IPicture(0), 1, QRCodegenConvertToPicture)
+    If hResult < 0 Then
+        Err.Raise hResult, "OleCreatePictureIndirect"
+    End If
+    '--- not to destroy metafile, it's already owned by returned IPicture
     hDC = 0
-    '--- Fill in magic IPicture GUID {7BF80980-BF32-101A-8BBB-00AA00300CAB}
-    aGUID(0) = &H7BF80980
-    aGUID(1) = &H101ABF32
-    aGUID(2) = &HAA00BB8B
-    aGUID(3) = &HAB0C3000
-    '--- Create picture from bitmap handle
-    Call OleCreatePictureIndirect(uDesc, aGUID(0), True, QRCodegenConvertToPicture)
 QH:
-    If hBrush <> 0 Then
-        Call DeleteObject(hBrush)
-        hBrush = 0
+    If hPrevBrush <> 0 Then
+        Call SelectObject(hDC, hPrevBrush)
+        hPrevBrush = 0
+    End If
+    If hPrevPen <> 0 Then
+        Call SelectObject(hDC, hPrevPen)
+        hPrevPen = 0
+    End If
+    If hDC <> 0 Then
+        Call CloseEnhMetaFile(hDC)
+        hDC = 0
+    End If
+    If hBlackBrush <> 0 Then
+        Call DeleteObject(hBlackBrush)
+        hBlackBrush = 0
+    End If
+    If IsArray(vErr) Then
+        On Error GoTo 0
+        Err.Raise vErr(0), vErr(1), vErr(2)
+    End If
+    Exit Function
+EH:
+    vErr = Array(Err.Number, Err.Source, Err.Description)
+    Resume QH
+End Function
+
+Public Function QRCodegenConvertToData(ByVal pPicture As stdole.IUnknown, Optional ByVal NewWidth As Long, Optional ByVal NewHeight As Long) As Byte()
+    Const IDX_QUERYINTERFACE As Long = 0
+    Const IDX_SAVE          As Long = 6
+    Const IDX_SEEK          As Long = 5
+    Const IDX_READ          As Long = 3
+    Const STREAM_SEEK_SET   As Long = 0
+    Const STREAM_SEEK_END   As Long = 2
+    Dim pStream         As stdole.IUnknown
+    Dim pPersist        As stdole.IUnknown
+    Dim cSize           As Currency
+    Dim baOutput()      As Byte
+    Dim hResult         As Long
+    
+    If pPicture Is Nothing Then
+        baOutput = vbNullString
+        GoTo QH
+    End If
+    If NewWidth > 0 And NewHeight > 0 Then
+        '--- super sample to 4x4 for cheap anti-aliasing
+        Set pPicture = QRCodegenResizePicture(pPicture, NewWidth * 4, NewHeight * 4)
+        Set pPicture = QRCodegenResizePicture(pPicture, NewWidth, NewHeight)
+    End If
+    Set pStream = SHCreateMemStream(ByVal 0, 0)
+    If IID_IPersistStream(0) = 0 Then
+        IID_IPersistStream(0) = &H109: IID_IPersistStream(2) = &HC0: IID_IPersistStream(3) = &H46000000
+    End If
+    hResult = DispCallByVtbl(pPicture, IDX_QUERYINTERFACE, VarPtr(IID_IPersistStream(0)), VarPtr(pPersist))
+    If hResult < 0 Then
+        Err.Raise hResult, "IUnknown.QueryInterface"
+    End If
+    hResult = DispCallByVtbl(pPersist, IDX_SAVE, pStream, True)
+    If hResult < 0 Then
+        Err.Raise hResult, "IPersistStream.Save"
+    End If
+    hResult = DispCallByVtbl(pStream, IDX_SEEK, 0@, STREAM_SEEK_END, VarPtr(cSize))
+    If hResult < 0 Then
+        Err.Raise hResult, "IStream.Seek(STREAM_SEEK_END)"
+    End If
+    If cSize <= 8 Then
+        baOutput = vbNullString
+        GoTo QH
+    End If
+    ReDim baOutput(0 To cSize * 10000@ - 9) As Byte
+    hResult = DispCallByVtbl(pStream, IDX_SEEK, 0.0008@, STREAM_SEEK_SET, VarPtr(cSize))
+    If hResult < 0 Then
+        Err.Raise hResult, "IStream.Seek(STREAM_SEEK_SET)"
+    End If
+    hResult = DispCallByVtbl(pStream, IDX_READ, VarPtr(baOutput(0)), UBound(baOutput) + 1, VarPtr(cSize))
+    If hResult < 0 Then
+        Err.Raise hResult, "IStream.Read"
+    End If
+QH:
+    QRCodegenConvertToData = baOutput
+End Function
+
+Private Function HM2Pix(ByVal Value As Double, ByVal lDpi As Long) As Long
+    HM2Pix = Int(Value * lDpi / 2540 + 0.5)
+End Function
+
+Public Function QRCodegenResizePicture(pPicture As IPicture, ByVal NewWidth As Long, ByVal NewHeight As Long) As StdPicture
+    Const HALFTONE        As Long = 4
+    Const DIB_RGB_COLORS  As Long = 0
+    Const LOGPIXELSX      As Long = 88
+    Const LOGPIXELSY      As Long = 90
+    Const vbPicTypeBitmap As Long = 1
+    Const vbSrcCopy       As Long = &HCC0020
+    Dim hDC             As LongPtr
+    Dim uHdr            As BITMAPINFOHEADER
+    Dim hDib            As LongPtr
+    Dim hPrevDib        As LongPtr
+    Dim hSrcDC          As LongPtr
+    Dim hSrcPrevBmp     As LongPtr
+    Dim uDesc           As PICTDESC
+    Dim hResult         As Long
+    Dim vErr            As Variant
+    
+    On Error GoTo EH
+    hDC = CreateCompatibleDC(0)
+    Call SetStretchBltMode(hDC, HALFTONE)
+    With uHdr
+        .biSize = LenB(uHdr)
+        .biPlanes = 1
+        .biBitCount = 32
+        .biWidth = NewWidth
+        .biHeight = -NewHeight
+        .biSizeImage = (4 * NewWidth) * NewHeight
+    End With
+    hDib = CreateDIBSection(hDC, uHdr, DIB_RGB_COLORS, 0, 0, 0)
+    hPrevDib = SelectObject(hDC, hDib)
+    If pPicture.Type = vbPicTypeBitmap Then
+        hSrcDC = CreateCompatibleDC(0)
+        hSrcPrevBmp = SelectObject(hSrcDC, pPicture.Handle)
+        Call StretchBlt(hDC, 0, 0, NewWidth, NewHeight, hSrcDC, 0, 0, _
+            HM2Pix(pPicture.Width, GetDeviceCaps(hDC, LOGPIXELSX)), _
+            HM2Pix(pPicture.Height, GetDeviceCaps(hDC, LOGPIXELSY)), vbSrcCopy)
+    Else
+        pPicture.Render CLng(hDC), 0, 0, NewWidth, NewHeight, 0, 0, pPicture.Width, pPicture.Height, ByVal 0
+    End If
+    Call SelectObject(hDC, hPrevDib)
+    hPrevDib = 0
+    With uDesc
+        .Size = LenB(uDesc)
+        .Type = vbPicTypeBitmap
+        .hBmpOrIcon = hDib
+    End With
+    If IID_IPicture(0) = 0 Then
+        IID_IPicture(0) = &H7BF80980: IID_IPicture(1) = &H101ABF32: IID_IPicture(2) = &HAA00BB8B: IID_IPicture(3) = &HAB0C3000
+    End If
+    hResult = OleCreatePictureIndirect(uDesc, IID_IPicture(0), 1, QRCodegenResizePicture)
+    If hResult < 0 Then
+        Err.Raise hResult, "OleCreatePictureIndirect"
+    End If
+    '--- not to destroy DIB, it's already owned by returned IPicture
+    hDib = 0
+QH:
+    If hSrcPrevBmp <> 0 Then
+        Call SelectObject(hSrcDC, hSrcPrevBmp)
+        hSrcPrevBmp = 0
+    End If
+    If hSrcDC <> 0 Then
+        Call DeleteDC(hSrcDC)
+        hSrcDC = 0
+    End If
+    If hPrevDib <> 0 Then
+        Call SelectObject(hDC, hPrevDib)
+        hPrevDib = 0
+    End If
+    If hDC <> 0 Then
+        Call DeleteDC(hDC)
+        hDC = 0
+    End If
+    If hDib <> 0 Then
+        Call DeleteObject(hDib)
+        hDib = 0
     End If
     If IsArray(vErr) Then
         On Error GoTo 0
@@ -1153,4 +1471,28 @@ Private Function pvToUtf8Array(sText As String) As Byte()
         baRetVal = vbNullString
     End If
     pvToUtf8Array = baRetVal
+End Function
+
+Private Function DispCallByVtbl(pUnk As stdole.IUnknown, ByVal lIndex As Long, ParamArray A() As Variant) As Variant
+    Const CC_STDCALL    As Long = 4
+#If Win64 Then
+    Const PTR_SIZE      As Long = 8
+#Else
+    Const PTR_SIZE      As Long = 4
+#End If
+    Dim lIdx            As Long
+    Dim vParam()        As Variant
+    Dim vType(0 To 63)  As Integer
+    Dim vPtr(0 To 63)   As LongPtr
+    Dim hResult         As Long
+    
+    vParam = A
+    For lIdx = 0 To UBound(vParam)
+        vType(lIdx) = VarType(vParam(lIdx))
+        vPtr(lIdx) = VarPtr(vParam(lIdx))
+    Next
+    hResult = DispCallFunc(ObjPtr(pUnk), lIndex * PTR_SIZE, CC_STDCALL, vbLong, lIdx, vType(0), vPtr(0), DispCallByVtbl)
+    If hResult < 0 Then
+        Err.Raise hResult, "DispCallFunc"
+    End If
 End Function
