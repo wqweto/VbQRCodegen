@@ -369,9 +369,9 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     For lY = 0 To lQrSize - 1
         For lX = 0 To lQrSize - 1
             uRect.Left = 1 + lX * ModuleSize
-            uRect.Right = 1 + uRect.Left + ModuleSize - 1
+            uRect.Right = uRect.Left + ModuleSize
             uRect.Top = 1 + lY * ModuleSize
-            uRect.Bottom = 1 + uRect.Top + ModuleSize - 1
+            uRect.Bottom = uRect.Top + ModuleSize
             If Not SquareModules Then
                 bHasLeft = QRCodegenGetModule(baQrCode, lX - 1, lY)
                 bHasUp = QRCodegenGetModule(baQrCode, lX, lY - 1)
@@ -521,7 +521,7 @@ EH:
     Resume QH
 End Function
 
-Public Function QRCodegenConvertToData(ByVal pPicture As stdole.IUnknown, Optional ByVal NewWidth As Long, Optional ByVal NewHeight As Long) As Byte()
+Public Function QRCodegenConvertToData(ByVal pPicture As IPicture, Optional ByVal NewWidth As Long, Optional ByVal NewHeight As Long) As Byte()
     Const IDX_QUERYINTERFACE As Long = 0
     Const IDX_SAVE          As Long = 6
     Const IDX_SEEK          As Long = 5
@@ -672,28 +672,34 @@ Public Function QRCodegenDebugDump(baQrCode() As Byte) As String
     Dim lY              As Long
     Dim lX              As Long
     
-    lQrSize = QRCodegenGetSize(baQrCode)
-    ReDim aRows(0 To lQrSize - 1) As String
-    For lY = 0 To lQrSize - 1
-        For lX = 0 To lQrSize - 1
-            aRows(lY) = aRows(lY) & IIf(QRCodegenGetModule(baQrCode, lX, lY), "##", "  ")
+    If UBound(baQrCode) >= 0 Then
+        lQrSize = QRCodegenGetSize(baQrCode)
+        ReDim aRows(0 To lQrSize - 1) As String
+        For lY = 0 To lQrSize - 1
+            For lX = 0 To lQrSize - 1
+                aRows(lY) = aRows(lY) & IIf(QRCodegenGetModule(baQrCode, lX, lY), "##", "  ")
+            Next
+            aRows(lY) = RTrim$(aRows(lY))
         Next
-        aRows(lY) = RTrim$(aRows(lY))
-    Next
-    QRCodegenDebugDump = Join(aRows, vbCrLf)
+        QRCodegenDebugDump = Join(aRows, vbCrLf)
+    End If
 End Function
 
 Public Function QRCodegenGetSize(baQrCode() As Byte) As Long
-    QRCodegenGetSize = baQrCode(0)
-    Debug.Assert VERSION_MIN * 4 + 17 <= QRCodegenGetSize And QRCodegenGetSize <= VERSION_MAX * 4 + 17
+    If UBound(baQrCode) >= 0 Then
+        QRCodegenGetSize = baQrCode(0)
+        Debug.Assert VERSION_MIN * 4 + 17 <= QRCodegenGetSize And QRCodegenGetSize <= VERSION_MAX * 4 + 17
+    End If
 End Function
 
 Public Function QRCodegenGetModule(baQrCode() As Byte, ByVal lX As Long, ByVal lY As Long) As Long
     Dim lQrSize         As Long
     
-    lQrSize = baQrCode(0)
-    If 0 <= lX And lX < lQrSize And 0 <= lY And lY < lQrSize Then
-        QRCodegenGetModule = pvGetModuleBounded(baQrCode, lX, lY)
+    If UBound(baQrCode) > 0 Then
+        lQrSize = baQrCode(0)
+        If 0 <= lX And lX < lQrSize And 0 <= lY And lY < lQrSize Then
+            QRCodegenGetModule = pvGetModuleBounded(baQrCode, lX, lY)
+        End If
     End If
 End Function
 
@@ -708,7 +714,7 @@ Public Function QRCodegenIsAlphanumeric(sText As String) As Boolean
     
     If LenB(sText) <> 0 Then
         For lIdx = 1 To Len(sText)
-            If InStr(Mid$(sText, lIdx, 1), ALPHANUMERIC_CHARSET) = 0 Then
+            If InStr(ALPHANUMERIC_CHARSET, Mid$(sText, lIdx, 1)) = 0 Then
                 Exit Function
             End If
         Next
@@ -787,7 +793,7 @@ Public Function QRCodegenMakeAlphanumeric(sText As String) As QRCodegenSegment
         ReDim .Data(0 To (lBitLen + 7) \ 8 - 1) As Byte
         .NumChars = lLen
         For lIdx = 1 To lLen
-            lChar = InStr(Mid$(sText, lIdx, 1), ALPHANUMERIC_CHARSET) - 1
+            lChar = InStr(ALPHANUMERIC_CHARSET, Mid$(sText, lIdx, 1)) - 1
             Debug.Assert 0 <= lChar
             lAccumData = lAccumData * 45 + lChar
             lAccumCount = lAccumCount + 1
