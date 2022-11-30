@@ -71,6 +71,7 @@ Private Declare PtrSafe Function SelectObject Lib "gdi32" (ByVal hDC As LongPtr,
 Private Declare PtrSafe Function SHCreateMemStream Lib "shlwapi" Alias "#12" (pInit As Any, ByVal cbInit As Long) As stdole.IUnknown
 Private Declare PtrSafe Function DispCallFunc Lib "oleaut32" (ByVal pvInstance As LongPtr, ByVal oVft As LongPtr, ByVal lCc As Long, ByVal vtReturn As VbVarType, ByVal cActuals As Long, prgVt As Any, prgpVarg As Any, pvargResult As Variant) As Long
 Private Declare PtrSafe Function IntersectClipRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As Long
+Private Declare PtrSafe Function CreateRectRgn Lib "gdi32" (ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As LongPtr
 Private Declare PtrSafe Function SelectClipRgn Lib "gdi32" (ByVal hDC As LongPtr, ByVal hRgn As LongPtr) As Long
 Private Declare PtrSafe Function CreateCompatibleDC Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
 Private Declare PtrSafe Function DeleteDC Lib "gdi32" (ByVal hDC As LongPtr) As Long
@@ -96,6 +97,7 @@ Private Declare Function SelectObject Lib "gdi32" (ByVal hDC As LongPtr, ByVal h
 Private Declare Function SHCreateMemStream Lib "shlwapi" Alias "#12" (pInit As Any, ByVal cbInit As Long) As stdole.IUnknown
 Private Declare Function DispCallFunc Lib "oleaut32" (ByVal pvInstance As LongPtr, ByVal oVft As LongPtr, ByVal lCc As Long, ByVal vtReturn As VbVarType, ByVal cActuals As Long, prgVt As Any, prgpVarg As Any, pvargResult As Variant) As Long
 Private Declare Function IntersectClipRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As Long
+Private Declare Function CreateRectRgn Lib "gdi32" (ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As LongPtr
 Private Declare Function SelectClipRgn Lib "gdi32" (ByVal hDC As LongPtr, ByVal hRgn As LongPtr) As Long
 Private Declare Function CreateCompatibleDC Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
 Private Declare Function DeleteDC Lib "gdi32" (ByVal hDC As LongPtr) As Long
@@ -159,7 +161,7 @@ Private IID_IPersistStream(0 To 3)                   As Long '--- 00000109-0000-
 
 Public Function QRCodegenBarcode(TextOrByteArray As Variant, _
             Optional ByVal ForeColor As OLE_COLOR = vbBlack, _
-            Optional ByVal ModuleSize As Long = 10, _
+            Optional ByVal ModuleSize As Long = 25, _
             Optional ByVal SquareModules As Boolean, _
             Optional ByVal Ecl As QRCodegenEcc = QRCodegenEcc_LOW, _
             Optional ByVal MinVersion As Long = VERSION_MIN, _
@@ -343,6 +345,7 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     Dim hBlackBrush     As LongPtr
     Dim hPrevBrush      As LongPtr
     Dim hPrevPen        As LongPtr
+    Dim hRectRgn        As LongPtr
     Dim bHasLeft        As Boolean
     Dim bHasUp          As Boolean
     Dim bHasRight       As Boolean
@@ -366,6 +369,7 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     hBlackBrush = CreateSolidBrush(ForeColor)
     hPrevBrush = SelectObject(hDC, hBlackBrush)
     hPrevPen = SelectObject(hDC, GetStockObject(NULL_PEN))
+    hRectRgn = CreateRectRgn(uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
     For lY = 0 To lQrSize - 1
         For lX = 0 To lQrSize - 1
             uRect.Left = 1 + lX * ModuleSize
@@ -389,85 +393,87 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
                 End If
             Else
                 If QRCodegenGetModule(baQrCode, lX, lY) Then
-                    Call FillRect(hDC, uRect, hWhiteBrush)
+'                    Call FillRect(hDC, uRect, hWhiteBrush)
                     Call SelectObject(hDC, hBlackBrush)
                     If Not bHasDiag And Not bHasLeft And Not bHasUp And bHasRight And bHasDown Then
                         Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
                         Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + ModuleSize + 1, uRect.Bottom + ModuleSize + 1, ModuleSize * 2, ModuleSize * 2)
-                        Call SelectClipRgn(hDC, 0)
+                        Call SelectClipRgn(hDC, hRectRgn)
                     ElseIf Not bHasDiag And bHasLeft And Not bHasUp And Not bHasRight And bHasDown Then
                         Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
                         Call RoundRect(hDC, uRect.Left - ModuleSize, uRect.Top, uRect.Right + 1, uRect.Bottom + ModuleSize + 1, ModuleSize * 2, ModuleSize * 2)
-                        Call SelectClipRgn(hDC, 0)
+                        Call SelectClipRgn(hDC, hRectRgn)
                     ElseIf Not bHasDiag And Not bHasLeft And bHasUp And bHasRight And Not bHasDown Then
                         Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
                         Call RoundRect(hDC, uRect.Left, uRect.Top - ModuleSize, uRect.Right + ModuleSize + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
-                        Call SelectClipRgn(hDC, 0)
+                        Call SelectClipRgn(hDC, hRectRgn)
                     ElseIf Not bHasDiag And bHasLeft And bHasUp And Not bHasRight And Not bHasDown Then
                         Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
                         Call RoundRect(hDC, uRect.Left - ModuleSize, uRect.Top - ModuleSize, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
-                        Call SelectClipRgn(hDC, 0)
-                    Else
+                        Call SelectClipRgn(hDC, hRectRgn)
+                    ElseIf Not bHasLeft And Not bHasUp Or Not bHasRight And Not bHasUp Or Not bHasLeft And Not bHasDown Or Not bHasRight And Not bHasDown Then
                         Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2)
                         If Not bHasLeft And Not bHasUp Then
                             Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
                         Else
                             Call FillRect(hDC, uRect, hBlackBrush)
                         End If
-                        Call SelectClipRgn(hDC, 0)
+                        Call SelectClipRgn(hDC, hRectRgn)
                         Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top, uRect.Right, uRect.Top + ModuleSize \ 2)
                         If Not bHasRight And Not bHasUp Then
                             Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
                         Else
                             Call FillRect(hDC, uRect, hBlackBrush)
                         End If
-                        Call SelectClipRgn(hDC, 0)
+                        Call SelectClipRgn(hDC, hRectRgn)
                         Call IntersectClipRect(hDC, uRect.Left, uRect.Top + ModuleSize \ 2, uRect.Left + ModuleSize \ 2, uRect.Bottom)
                         If Not bHasLeft And Not bHasDown Then
-                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize + 1, ModuleSize + 1)
+                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
                         Else
                             Call FillRect(hDC, uRect, hBlackBrush)
                         End If
-                        Call SelectClipRgn(hDC, 0)
+                        Call SelectClipRgn(hDC, hRectRgn)
                         Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2, uRect.Right, uRect.Bottom)
                         If Not bHasRight And Not bHasDown Then
-                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize + 1, ModuleSize + 1)
+                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
                         Else
                             Call FillRect(hDC, uRect, hBlackBrush)
                         End If
-                        Call SelectClipRgn(hDC, 0)
+                        Call SelectClipRgn(hDC, hRectRgn)
+                    Else
+                        Call FillRect(hDC, uRect, hBlackBrush)
                     End If
-                Else
+                ElseIf bHasLU And bHasLeft And bHasUp Or bHasRU And bHasRight And bHasUp Or bHasLD And bHasLeft And bHasDown Or bHasRD And bHasRight And bHasDown Then
                     Call FillRect(hDC, uRect, hBlackBrush)
                     Call SelectObject(hDC, hWhiteBrush)
                     Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2)
                     If bHasLU And bHasLeft And bHasUp Then
-                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
                     Else
                         Call FillRect(hDC, uRect, hWhiteBrush)
                     End If
-                    Call SelectClipRgn(hDC, 0)
+                    Call SelectClipRgn(hDC, hRectRgn)
                     Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top, uRect.Right, uRect.Top + ModuleSize \ 2)
                     If bHasRU And bHasRight And bHasUp Then
-                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
                     Else
                         Call FillRect(hDC, uRect, hWhiteBrush)
                     End If
-                    Call SelectClipRgn(hDC, 0)
+                    Call SelectClipRgn(hDC, hRectRgn)
                     Call IntersectClipRect(hDC, uRect.Left, uRect.Top + ModuleSize \ 2, uRect.Left + ModuleSize \ 2, uRect.Bottom)
                     If bHasLD And bHasLeft And bHasDown Then
-                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
                     Else
                         Call FillRect(hDC, uRect, hWhiteBrush)
                     End If
-                    Call SelectClipRgn(hDC, 0)
+                    Call SelectClipRgn(hDC, hRectRgn)
                     Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2, uRect.Right, uRect.Bottom)
                     If bHasRD And bHasRight And bHasDown Then
-                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
+                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
                     Else
                         Call FillRect(hDC, uRect, hWhiteBrush)
                     End If
-                    Call SelectClipRgn(hDC, 0)
+                    Call SelectClipRgn(hDC, hRectRgn)
                 End If
             End If
         Next
