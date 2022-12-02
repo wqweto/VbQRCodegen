@@ -67,13 +67,15 @@ Private Sub Form_Resize()
     Dim lWidth          As Long
     Dim lHeight         As Long
     
-    lWidth = ScaleWidth - Image1.Left - Image1.Left
-    lHeight = ScaleHeight - Image1.Top - Image1.Left
-    If lWidth > lHeight Then
-        lWidth = lHeight
+    If WindowState <> vbMinimized Then
+        lWidth = ScaleWidth - Image1.Left - Image1.Left
+        lHeight = ScaleHeight - Image1.Top - Image1.Left
+        If lWidth > lHeight Then
+            lWidth = lHeight
+        End If
+        Image1.Width = lWidth
+        Image1.Height = lWidth
     End If
-    Image1.Width = lWidth
-    Image1.Height = lWidth
 End Sub
 
 Private Sub Text1_Change()

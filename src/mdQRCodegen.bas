@@ -58,27 +58,24 @@ End Type
 
 #If HasPtrSafe Then
 Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As LongPtr)
-Private Declare PtrSafe Function CreateEnhMetaFile Lib "gdi32" Alias "CreateEnhMetaFileW" (ByVal hdcRef As LongPtr, ByVal lpFileName As LongPtr, ByVal lpRect As LongPtr, ByVal lpDescription As LongPtr) As Longptr
+Private Declare PtrSafe Function CreateEnhMetaFile Lib "gdi32" Alias "CreateEnhMetaFileW" (ByVal hdcRef As LongPtr, ByVal lpFileName As LongPtr, ByVal lpRect As LongPtr, ByVal lpDescription As LongPtr) As LongPtr
 Private Declare PtrSafe Function CloseEnhMetaFile Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
 Private Declare PtrSafe Function GetStockObject Lib "gdi32" (ByVal nIndex As Long) As Long
-Private Declare PtrSafe Function OleCreatePictureIndirect Lib "oleaut32" (lpPictDesc As PICTDESC, riid As Any, ByVal fPictureOwnsHandle As Long, ipic As IPicture) As Long
+Private Declare PtrSafe Function OleCreatePictureIndirect Lib "oleaut32" (lpPictDesc As PICTDESC, riid As Any, ByVal fPictureOwnsHandle As Long, lpvObj As IPicture) As Long
 Private Declare PtrSafe Function FillRect Lib "user32" (ByVal hDC As LongPtr, lpRect As RECT, ByVal hBrush As LongPtr) As Long
 Private Declare PtrSafe Function CreateSolidBrush Lib "gdi32" (ByVal crColor As Long) As LongPtr
 Private Declare PtrSafe Function DeleteObject Lib "gdi32" (ByVal hObject As LongPtr) As Long
 Private Declare PtrSafe Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As LongPtr, ByVal cchWideChar As Long, lpMultiByteStr As Any, ByVal cchMultiByte As LongPtr, ByVal lpDefaultChar As LongPtr, ByVal lpUsedDefaultChar As LongPtr) As Long
-Private Declare PtrSafe Function RoundRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long, ByVal X3 As Long, ByVal Y3 As Long) As Long
 Private Declare PtrSafe Function SelectObject Lib "gdi32" (ByVal hDC As LongPtr, ByVal hObject As LongPtr) As LongPtr
 Private Declare PtrSafe Function SHCreateMemStream Lib "shlwapi" Alias "#12" (pInit As Any, ByVal cbInit As Long) As stdole.IUnknown
 Private Declare PtrSafe Function DispCallFunc Lib "oleaut32" (ByVal pvInstance As LongPtr, ByVal oVft As LongPtr, ByVal lCc As Long, ByVal vtReturn As VbVarType, ByVal cActuals As Long, prgVt As Any, prgpVarg As Any, pvargResult As Variant) As Long
-Private Declare PtrSafe Function IntersectClipRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As Long
-Private Declare PtrSafe Function CreateRectRgn Lib "gdi32" (ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As LongPtr
-Private Declare PtrSafe Function SelectClipRgn Lib "gdi32" (ByVal hDC As LongPtr, ByVal hRgn As LongPtr) As Long
 Private Declare PtrSafe Function CreateCompatibleDC Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
 Private Declare PtrSafe Function DeleteDC Lib "gdi32" (ByVal hDC As LongPtr) As Long
 Private Declare PtrSafe Function CreateDIBSection Lib "gdi32" (ByVal hDC As LongPtr, lpBitsInfo As Any, ByVal wUsage As Long, lpBits As LongPtr, ByVal hSection As LongPtr, ByVal dwOffset As Long) As LongPtr
 Private Declare PtrSafe Function SetStretchBltMode Lib "gdi32" (ByVal hDC As LongPtr, ByVal nStretchMode As Long) As Long
 Private Declare PtrSafe Function StretchBlt Lib "gdi32" (ByVal hDC As LongPtr, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hdcSrc As LongPtr, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
 Private Declare PtrSafe Function GetDeviceCaps Lib "gdi32" (ByVal hDC As LongPtr, ByVal nIndex As Long) As Long
+Private Declare PtrSafe Function PolyPolygon Lib "gdi32" (ByVal hDC As LongPtr, lpPoint As Any, lpPolyCounts As Any, ByVal nCount As Long) As Long
 #Else
 Private Enum LongPtr
     [_]
@@ -87,25 +84,27 @@ Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination
 Private Declare Function CreateEnhMetaFile Lib "gdi32" Alias "CreateEnhMetaFileW" (ByVal hdcRef As LongPtr, ByVal lpFileName As LongPtr, ByVal lpRect As LongPtr, ByVal lpDescription As LongPtr) As LongPtr
 Private Declare Function CloseEnhMetaFile Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
 Private Declare Function GetStockObject Lib "gdi32" (ByVal nIndex As Long) As Long
-Private Declare Function OleCreatePictureIndirect Lib "oleaut32" (lpPictDesc As PICTDESC, riid As Any, ByVal fPictureOwnsHandle As Long, ipic As IPicture) As Long
+Private Declare Function OleCreatePictureIndirect Lib "oleaut32" (lpPictDesc As PICTDESC, riid As Any, ByVal fPictureOwnsHandle As Long, lpvObj As IPicture) As Long
 Private Declare Function FillRect Lib "user32" (ByVal hDC As LongPtr, lpRect As RECT, ByVal hBrush As LongPtr) As Long
 Private Declare Function CreateSolidBrush Lib "gdi32" (ByVal crColor As Long) As LongPtr
 Private Declare Function DeleteObject Lib "gdi32" (ByVal hObject As LongPtr) As Long
 Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As LongPtr, ByVal cchWideChar As Long, lpMultiByteStr As Any, ByVal cchMultiByte As LongPtr, ByVal lpDefaultChar As LongPtr, ByVal lpUsedDefaultChar As LongPtr) As Long
-Private Declare Function RoundRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long, ByVal X3 As Long, ByVal Y3 As Long) As Long
 Private Declare Function SelectObject Lib "gdi32" (ByVal hDC As LongPtr, ByVal hObject As LongPtr) As LongPtr
 Private Declare Function SHCreateMemStream Lib "shlwapi" Alias "#12" (pInit As Any, ByVal cbInit As Long) As stdole.IUnknown
 Private Declare Function DispCallFunc Lib "oleaut32" (ByVal pvInstance As LongPtr, ByVal oVft As LongPtr, ByVal lCc As Long, ByVal vtReturn As VbVarType, ByVal cActuals As Long, prgVt As Any, prgpVarg As Any, pvargResult As Variant) As Long
-Private Declare Function IntersectClipRect Lib "gdi32" (ByVal hDC As LongPtr, ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As Long
-Private Declare Function CreateRectRgn Lib "gdi32" (ByVal X1 As Long, ByVal Y1 As Long, ByVal X2 As Long, ByVal Y2 As Long) As LongPtr
-Private Declare Function SelectClipRgn Lib "gdi32" (ByVal hDC As LongPtr, ByVal hRgn As LongPtr) As Long
 Private Declare Function CreateCompatibleDC Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
 Private Declare Function DeleteDC Lib "gdi32" (ByVal hDC As LongPtr) As Long
 Private Declare Function CreateDIBSection Lib "gdi32" (ByVal hDC As LongPtr, lpBitsInfo As Any, ByVal wUsage As Long, lpBits As LongPtr, ByVal hSection As LongPtr, ByVal dwOffset As Long) As LongPtr
 Private Declare Function SetStretchBltMode Lib "gdi32" (ByVal hDC As LongPtr, ByVal nStretchMode As Long) As Long
 Private Declare Function StretchBlt Lib "gdi32" (ByVal hDC As LongPtr, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hdcSrc As LongPtr, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
 Private Declare Function GetDeviceCaps Lib "gdi32" (ByVal hDC As LongPtr, ByVal nIndex As Long) As Long
+Private Declare Function PolyPolygon Lib "gdi32" (ByVal hDC As LongPtr, lpPoint As Any, lpPolyCounts As Any, ByVal nCount As Long) As Long
 #End If
+
+Private Type POINTAPI
+    X                   As Long
+    Y                   As Long
+End Type
 
 Private Type RECT
     Left                As Long
@@ -148,6 +147,15 @@ Private Const PENALTY_N4                As Long = 10
 Private Const INT16_MAX                 As Long = 32767
 Private Const LONG_MAX                  As Long = 2147483647
 Private Const ALPHANUMERIC_CHARSET      As String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"
+Private Const M_PI_2                    As Double = 3.14159265358979 / 2
+Private Const LINE_TO                   As Long = 1
+Private Const TURN_LEFT                 As Long = 2
+Private Const TURN_RIGHT                As Long = 3
+Private Const WIDE_LEFT                 As Long = 4
+Private Const WIDE_RIGHT                As Long = 5
+Private Const SUPERWIDE_LEFT            As Long = 6
+Private Const SUPERWIDE_RIGHT           As Long = 7
+Private Const SKIP_TO                   As Long = 8
 
 Private LNG_POW2(0 To 31)                            As Long
 Private ECC_CODEWORDS_PER_BLOCK(0 To 3, 0 To 40)     As Long
@@ -161,7 +169,7 @@ Private IID_IPersistStream(0 To 3)                   As Long '--- 00000109-0000-
 
 Public Function QRCodegenBarcode(TextOrByteArray As Variant, _
             Optional ByVal ForeColor As OLE_COLOR = vbBlack, _
-            Optional ByVal ModuleSize As Long = 25, _
+            Optional ByVal ModuleSize As Long = 20, _
             Optional ByVal SquareModules As Boolean, _
             Optional ByVal Ecl As QRCodegenEcc = QRCodegenEcc_LOW, _
             Optional ByVal MinVersion As Long = VERSION_MIN, _
@@ -331,153 +339,37 @@ End Function
 
 Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
             Optional ByVal ForeColor As OLE_COLOR = vbBlack, _
-            Optional ByVal ModuleSize As Long = 10, _
+            Optional ByVal ModuleSize As Long = 20, _
             Optional ByVal SquareModules As Boolean) As StdPicture
     Const WHITE_BRUSH   As Long = 0
     Const NULL_PEN      As Long = 8
     Const vbPicTypeEMetafile As Long = 4
+    Dim uVectors()      As RECT
+    Dim uPoints()       As POINTAPI
+    Dim aPolys()        As Long
     Dim lQrSize         As Long
-    Dim lY              As Long
-    Dim lX              As Long
     Dim hDC             As LongPtr
     Dim uRect           As RECT
-    Dim hWhiteBrush     As LongPtr
     Dim hBlackBrush     As LongPtr
     Dim hPrevBrush      As LongPtr
     Dim hPrevPen        As LongPtr
-    Dim hRectRgn        As LongPtr
-    Dim bHasLeft        As Boolean
-    Dim bHasUp          As Boolean
-    Dim bHasRight       As Boolean
-    Dim bHasDown        As Boolean
-    Dim bHasLU          As Boolean
-    Dim bHasLD          As Boolean
-    Dim bHasRU          As Boolean
-    Dim bHasRD          As Boolean
-    Dim bHasDiag        As Boolean
     Dim uDesc           As PICTDESC
     Dim hResult         As Long
     Dim vErr            As Variant
     
     On Error GoTo EH
+    pvConstructVectors baQrCode, SquareModules, uVectors
+    pvConstructPolygons uVectors, ModuleSize, uPoints, aPolys
+    '--- draw polygons to enhanced metafile
     lQrSize = QRCodegenGetSize(baQrCode)
     hDC = CreateEnhMetaFile(0, 0, 0, 0)
     uRect.Right = 1 + lQrSize * ModuleSize + 2
     uRect.Bottom = 1 + lQrSize * ModuleSize + 2
-    hWhiteBrush = GetStockObject(WHITE_BRUSH)
-    Call FillRect(hDC, uRect, hWhiteBrush)
+    Call FillRect(hDC, uRect, GetStockObject(WHITE_BRUSH))
     hBlackBrush = CreateSolidBrush(ForeColor)
     hPrevBrush = SelectObject(hDC, hBlackBrush)
     hPrevPen = SelectObject(hDC, GetStockObject(NULL_PEN))
-    hRectRgn = CreateRectRgn(uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
-    For lY = 0 To lQrSize - 1
-        For lX = 0 To lQrSize - 1
-            uRect.Left = 1 + lX * ModuleSize
-            uRect.Right = uRect.Left + ModuleSize
-            uRect.Top = 1 + lY * ModuleSize
-            uRect.Bottom = uRect.Top + ModuleSize
-            If Not SquareModules Then
-                bHasLeft = QRCodegenGetModule(baQrCode, lX - 1, lY)
-                bHasUp = QRCodegenGetModule(baQrCode, lX, lY - 1)
-                bHasRight = QRCodegenGetModule(baQrCode, lX + 1, lY)
-                bHasDown = QRCodegenGetModule(baQrCode, lX, lY + 1)
-                bHasLU = QRCodegenGetModule(baQrCode, lX - 1, lY - 1)
-                bHasLD = QRCodegenGetModule(baQrCode, lX - 1, lY + 1)
-                bHasRU = QRCodegenGetModule(baQrCode, lX + 1, lY - 1)
-                bHasRD = QRCodegenGetModule(baQrCode, lX + 1, lY + 1)
-                bHasDiag = bHasLU Or bHasLD Or bHasRU Or bHasRD
-            End If
-            If SquareModules Or Abs(bHasLeft + bHasUp + bHasRight + bHasDown) >= 3 Then
-                If QRCodegenGetModule(baQrCode, lX, lY) Then
-                    Call FillRect(hDC, uRect, hBlackBrush)
-                End If
-            Else
-                If QRCodegenGetModule(baQrCode, lX, lY) Then
-'                    Call FillRect(hDC, uRect, hWhiteBrush)
-                    Call SelectObject(hDC, hBlackBrush)
-                    If Not bHasDiag And Not bHasLeft And Not bHasUp And bHasRight And bHasDown Then
-                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
-                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + ModuleSize + 1, uRect.Bottom + ModuleSize + 1, ModuleSize * 2, ModuleSize * 2)
-                        Call SelectClipRgn(hDC, hRectRgn)
-                    ElseIf Not bHasDiag And bHasLeft And Not bHasUp And Not bHasRight And bHasDown Then
-                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
-                        Call RoundRect(hDC, uRect.Left - ModuleSize, uRect.Top, uRect.Right + 1, uRect.Bottom + ModuleSize + 1, ModuleSize * 2, ModuleSize * 2)
-                        Call SelectClipRgn(hDC, hRectRgn)
-                    ElseIf Not bHasDiag And Not bHasLeft And bHasUp And bHasRight And Not bHasDown Then
-                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
-                        Call RoundRect(hDC, uRect.Left, uRect.Top - ModuleSize, uRect.Right + ModuleSize + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
-                        Call SelectClipRgn(hDC, hRectRgn)
-                    ElseIf Not bHasDiag And bHasLeft And bHasUp And Not bHasRight And Not bHasDown Then
-                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Right, uRect.Bottom)
-                        Call RoundRect(hDC, uRect.Left - ModuleSize, uRect.Top - ModuleSize, uRect.Right + 1, uRect.Bottom + 1, ModuleSize * 2, ModuleSize * 2)
-                        Call SelectClipRgn(hDC, hRectRgn)
-                    ElseIf Not bHasLeft And Not bHasUp Or Not bHasRight And Not bHasUp Or Not bHasLeft And Not bHasDown Or Not bHasRight And Not bHasDown Then
-                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2)
-                        If Not bHasLeft And Not bHasUp Then
-                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
-                        Else
-                            Call FillRect(hDC, uRect, hBlackBrush)
-                        End If
-                        Call SelectClipRgn(hDC, hRectRgn)
-                        Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top, uRect.Right, uRect.Top + ModuleSize \ 2)
-                        If Not bHasRight And Not bHasUp Then
-                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
-                        Else
-                            Call FillRect(hDC, uRect, hBlackBrush)
-                        End If
-                        Call SelectClipRgn(hDC, hRectRgn)
-                        Call IntersectClipRect(hDC, uRect.Left, uRect.Top + ModuleSize \ 2, uRect.Left + ModuleSize \ 2, uRect.Bottom)
-                        If Not bHasLeft And Not bHasDown Then
-                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
-                        Else
-                            Call FillRect(hDC, uRect, hBlackBrush)
-                        End If
-                        Call SelectClipRgn(hDC, hRectRgn)
-                        Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2, uRect.Right, uRect.Bottom)
-                        If Not bHasRight And Not bHasDown Then
-                            Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
-                        Else
-                            Call FillRect(hDC, uRect, hBlackBrush)
-                        End If
-                        Call SelectClipRgn(hDC, hRectRgn)
-                    Else
-                        Call FillRect(hDC, uRect, hBlackBrush)
-                    End If
-                ElseIf bHasLU And bHasLeft And bHasUp Or bHasRU And bHasRight And bHasUp Or bHasLD And bHasLeft And bHasDown Or bHasRD And bHasRight And bHasDown Then
-                    Call FillRect(hDC, uRect, hBlackBrush)
-                    Call SelectObject(hDC, hWhiteBrush)
-                    Call IntersectClipRect(hDC, uRect.Left, uRect.Top, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2)
-                    If bHasLU And bHasLeft And bHasUp Then
-                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
-                    Else
-                        Call FillRect(hDC, uRect, hWhiteBrush)
-                    End If
-                    Call SelectClipRgn(hDC, hRectRgn)
-                    Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top, uRect.Right, uRect.Top + ModuleSize \ 2)
-                    If bHasRU And bHasRight And bHasUp Then
-                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
-                    Else
-                        Call FillRect(hDC, uRect, hWhiteBrush)
-                    End If
-                    Call SelectClipRgn(hDC, hRectRgn)
-                    Call IntersectClipRect(hDC, uRect.Left, uRect.Top + ModuleSize \ 2, uRect.Left + ModuleSize \ 2, uRect.Bottom)
-                    If bHasLD And bHasLeft And bHasDown Then
-                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
-                    Else
-                        Call FillRect(hDC, uRect, hWhiteBrush)
-                    End If
-                    Call SelectClipRgn(hDC, hRectRgn)
-                    Call IntersectClipRect(hDC, uRect.Left + ModuleSize \ 2, uRect.Top + ModuleSize \ 2, uRect.Right, uRect.Bottom)
-                    If bHasRD And bHasRight And bHasDown Then
-                        Call RoundRect(hDC, uRect.Left, uRect.Top, uRect.Right + 1, uRect.Bottom + 1, ModuleSize, ModuleSize)
-                    Else
-                        Call FillRect(hDC, uRect, hWhiteBrush)
-                    End If
-                    Call SelectClipRgn(hDC, hRectRgn)
-                End If
-            End If
-        Next
-    Next
+    Call PolyPolygon(hDC, uPoints(0), aPolys(0), UBound(aPolys) + 1)
     If hPrevBrush <> 0 Then
         Call SelectObject(hDC, hPrevBrush)
         hPrevBrush = 0
@@ -639,7 +531,7 @@ Public Function QRCodegenResizePicture(pPicture As IPicture, ByVal NewWidth As L
     If hResult < 0 Then
         Err.Raise hResult, "OleCreatePictureIndirect"
     End If
-    '--- not to destroy DIB, it's already owned by returned IPicture
+    '--- not to destroy DIB, it's already owned by returned StdPicture
     hDib = 0
 QH:
     If hSrcPrevBmp <> 0 Then
@@ -675,8 +567,8 @@ End Function
 Public Function QRCodegenDebugDump(baQrCode() As Byte) As String
     Dim lQrSize         As Long
     Dim aRows()         As String
-    Dim lY              As Long
     Dim lX              As Long
+    Dim lY              As Long
     
     If UBound(baQrCode) >= 0 Then
         lQrSize = QRCodegenGetSize(baQrCode)
@@ -698,7 +590,7 @@ Public Function QRCodegenGetSize(baQrCode() As Byte) As Long
     End If
 End Function
 
-Public Function QRCodegenGetModule(baQrCode() As Byte, ByVal lX As Long, ByVal lY As Long) As Long
+Public Function QRCodegenGetModule(baQrCode() As Byte, ByVal lX As Long, ByVal lY As Long) As Boolean
     Dim lQrSize         As Long
     
     If UBound(baQrCode) > 0 Then
@@ -1237,8 +1129,8 @@ End Sub
 
 Private Sub pvApplyMask(baFunctionModules() As Byte, baQrCode() As Byte, ByVal eMask As QRCodegenMask)
     Dim lQrSize         As Long
-    Dim lY              As Long
     Dim lX              As Long
+    Dim lY              As Long
     Dim bInvert         As Boolean
     Dim bVal            As Boolean
     
@@ -1391,7 +1283,7 @@ Private Function pvFinderPenaltyAddHistory(ByVal lCurrentRunLength As Long, aRun
     aRunHistory(0) = lCurrentRunLength
 End Function
 
-Private Function pvGetModuleBounded(baQrCode() As Byte, ByVal lX As Long, ByVal lY As Long) As Long
+Private Function pvGetModuleBounded(baQrCode() As Byte, ByVal lX As Long, ByVal lY As Long) As Boolean
     Dim lQrSize         As Long
     Dim lIndex          As Long
     
@@ -1508,3 +1400,361 @@ Private Function DispCallByVtbl(pUnk As stdole.IUnknown, ByVal lIndex As Long, P
         Err.Raise hResult, "DispCallFunc"
     End If
 End Function
+
+Private Sub pvConstructVectors(baQrCode() As Byte, ByVal SquareModules As Boolean, uVectors() As RECT)
+    Dim lQrSize         As Long
+    Dim lX              As Long
+    Dim lY              As Long
+    Dim lHasLeft        As Long
+    Dim lHasUp          As Long
+    Dim lHasRight       As Long
+    Dim lHasDown        As Long
+    Dim bHasDiag        As Boolean
+    
+    lQrSize = QRCodegenGetSize(baQrCode)
+    '--- oversize array by one element in all 4 directions
+    ReDim uVectors(-1 To lQrSize + 1, -1 To lQrSize + 1) As RECT
+    For lY = 0 To lQrSize
+        For lX = 0 To lQrSize
+            If QRCodegenGetModule(baQrCode, lX, lY) And Not QRCodegenGetModule(baQrCode, lX, lY - 1) Then
+                uVectors(lX, lY).Right = LINE_TO
+            End If
+            If QRCodegenGetModule(baQrCode, lX - 1, lY) And Not QRCodegenGetModule(baQrCode, lX, lY) Then
+                uVectors(lX, lY).Bottom = LINE_TO
+            End If
+            If QRCodegenGetModule(baQrCode, lX - 1, lY - 1) And Not QRCodegenGetModule(baQrCode, lX - 1, lY) Then
+                uVectors(lX, lY).Left = LINE_TO
+            End If
+            If QRCodegenGetModule(baQrCode, lX, lY - 1) And Not QRCodegenGetModule(baQrCode, lX - 1, lY - 1) Then
+                uVectors(lX, lY).Top = LINE_TO
+            End If
+        Next
+    Next
+    If SquareModules Then
+        Exit Sub
+    End If
+    '--- mark curving vectors
+    For lY = 0 To lQrSize - 1
+        For lX = 0 To lQrSize - 1
+            lHasLeft = -QRCodegenGetModule(baQrCode, lX - 1, lY)
+            lHasUp = -QRCodegenGetModule(baQrCode, lX, lY - 1)
+            lHasRight = -QRCodegenGetModule(baQrCode, lX + 1, lY)
+            lHasDown = -QRCodegenGetModule(baQrCode, lX, lY + 1)
+            If lHasLeft + lHasUp + lHasRight + lHasDown < 3 Then
+                If QRCodegenGetModule(baQrCode, lX, lY) Then
+                    If lHasLeft = 0 And lHasUp = 0 Then
+                        uVectors(lX, lY + 1).Top = TURN_RIGHT
+                    End If
+                    If lHasRight = 0 And lHasUp = 0 Then
+                        uVectors(lX, lY).Right = TURN_RIGHT
+                    End If
+                    If lHasRight = 0 And lHasDown = 0 Then
+                        uVectors(lX + 1, lY).Bottom = TURN_RIGHT
+                    End If
+                    If lHasLeft = 0 And lHasDown = 0 Then
+                        uVectors(lX + 1, lY + 1).Left = TURN_RIGHT
+                    End If
+                Else
+                    If QRCodegenGetModule(baQrCode, lX - 1, lY - 1) And lHasLeft > 0 And lHasUp > 0 Then
+                        uVectors(lX + 1, lY).Left = TURN_LEFT
+                    End If
+                    If QRCodegenGetModule(baQrCode, lX + 1, lY - 1) And lHasRight > 0 And lHasUp > 0 Then
+                        uVectors(lX + 1, lY + 1).Top = TURN_LEFT
+                    End If
+                    If QRCodegenGetModule(baQrCode, lX - 1, lY + 1) And lHasLeft > 0 And lHasDown > 0 Then
+                        uVectors(lX, lY).Bottom = TURN_LEFT
+                    End If
+                    If QRCodegenGetModule(baQrCode, lX + 1, lY + 1) And lHasRight > 0 And lHasDown > 0 Then
+                        uVectors(lX, lY + 1).Right = TURN_LEFT
+                    End If
+                End If
+            End If
+        Next
+    Next
+    '--- mark wide and super-wide curves
+    For lY = 0 To lQrSize - 1
+        For lX = 0 To lQrSize - 1
+            If QRCodegenGetModule(baQrCode, lX, lY) Then
+                lHasLeft = -QRCodegenGetModule(baQrCode, lX - 1, lY)
+                If lHasLeft <> 0 Then
+                    lHasLeft = lHasLeft + -QRCodegenGetModule(baQrCode, lX - 2, lY)
+                End If
+                lHasUp = -QRCodegenGetModule(baQrCode, lX, lY - 1)
+                If lHasUp <> 0 Then
+                    lHasUp = lHasUp + -QRCodegenGetModule(baQrCode, lX, lY - 2)
+                End If
+                lHasRight = -QRCodegenGetModule(baQrCode, lX + 1, lY)
+                If lHasRight <> 0 Then
+                    lHasRight = lHasRight + -QRCodegenGetModule(baQrCode, lX + 2, lY)
+                End If
+                lHasDown = -QRCodegenGetModule(baQrCode, lX, lY + 1)
+                If lHasDown <> 0 Then
+                    lHasDown = lHasDown + -QRCodegenGetModule(baQrCode, lX, lY + 2)
+                End If
+                bHasDiag = QRCodegenGetModule(baQrCode, lX - 1, lY - 1) Or QRCodegenGetModule(baQrCode, lX - 1, lY + 1) _
+                        Or QRCodegenGetModule(baQrCode, lX + 1, lY - 1) Or QRCodegenGetModule(baQrCode, lX + 1, lY + 1)
+                If Not bHasDiag And lHasLeft = 0 And lHasUp = 0 And lHasRight > 0 And lHasDown > 0 Then
+                    If uVectors(lX + 2, lY + 1).Left = TURN_LEFT And lHasRight > 1 And lHasDown > 1 Then
+                        uVectors(lX, lY + 1).Top = SKIP_TO
+                        uVectors(lX, lY + 2).Top = SUPERWIDE_RIGHT
+                        uVectors(lX + 2, lY + 1).Left = WIDE_LEFT
+                    Else
+                        uVectors(lX, lY + 1).Top = WIDE_RIGHT
+                    End If
+                ElseIf Not bHasDiag And lHasLeft > 0 And lHasUp = 0 And lHasRight = 0 And lHasDown > 0 Then
+                    If uVectors(lX, lY + 2).Top = TURN_LEFT And lHasLeft > 1 And lHasDown > 1 Then
+                        uVectors(lX, lY).Right = SKIP_TO
+                        uVectors(lX - 1, lY).Right = SUPERWIDE_RIGHT
+                        uVectors(lX, lY + 2).Top = WIDE_LEFT
+                    Else
+                        uVectors(lX, lY).Right = WIDE_RIGHT
+                    End If
+                ElseIf Not bHasDiag And lHasLeft > 0 And lHasUp > 0 And lHasRight = 0 And lHasDown = 0 Then
+                    If uVectors(lX - 1, lY).Right = TURN_LEFT And lHasLeft > 1 And lHasUp > 1 Then
+                        uVectors(lX + 1, lY).Bottom = SKIP_TO
+                        uVectors(lX + 1, lY - 1).Bottom = SUPERWIDE_RIGHT
+                        uVectors(lX - 1, lY).Right = WIDE_LEFT
+                    Else
+                        uVectors(lX + 1, lY).Bottom = WIDE_RIGHT
+                    End If
+                ElseIf Not bHasDiag And lHasLeft = 0 And lHasUp > 0 And lHasRight > 0 And lHasDown = 0 Then
+                    If uVectors(lX + 1, lY - 1).Bottom = TURN_LEFT And lHasUp > 1 And lHasRight > 1 Then
+                        uVectors(lX + 1, lY + 1).Left = SKIP_TO
+                        uVectors(lX + 2, lY + 1).Left = SUPERWIDE_RIGHT
+                        uVectors(lX + 1, lY - 1).Bottom = WIDE_LEFT
+                    Else
+                        uVectors(lX + 1, lY + 1).Left = WIDE_RIGHT
+                    End If
+                End If
+            End If
+        Next
+    Next
+End Sub
+
+Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uPoints() As POINTAPI, aPolys() As Long)
+    Const TURN_STEPS     As Long = 4
+    Const WIDE_STEPS     As Long = 2 * TURN_STEPS
+    Const SUPERWIDE_STEPS As Long = 3 * TURN_STEPS
+    Dim lX              As Long
+    Dim lY              As Long
+    Dim lNumPolys       As Long
+    Dim lStartPts       As Long
+    Dim lTotalPts       As Long
+    Dim lValue          As Long
+    
+    ReDim uPoints(0 To 8) As POINTAPI
+    ReDim aPolys(0 To 8) As Long
+    Do While pvFindStartVector(uVectors, lX, lY)
+        lStartPts = lTotalPts
+        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize
+        Do
+            With uVectors(lX, lY)
+                If .Right <> 0 Then
+                    lValue = .Right
+                    .Right = 0
+                    Select Case lValue
+                    Case SUPERWIDE_RIGHT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + 2 * ModuleSize, 1 + lY * ModuleSize + ModuleSize * 3 \ 2, SUPERWIDE_STEPS
+                    Case WIDE_RIGHT
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                    Case WIDE_LEFT
+                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                    Case TURN_RIGHT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
+                    Case TURN_LEFT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
+                    Case LINE_TO
+                        If uVectors(lX + 1, lY).Right = LINE_TO Then
+                            lValue = 0
+                        End If
+                    End Select
+                    lX = lX + 1
+                ElseIf .Bottom <> 0 Then
+                    lValue = .Bottom
+                    .Bottom = 0
+                    Select Case lValue
+                    Case SUPERWIDE_RIGHT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize * 3 \ 2, 1 + lY * ModuleSize + 2 * ModuleSize, SUPERWIDE_STEPS
+                    Case WIDE_RIGHT
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                    Case WIDE_LEFT
+                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                    Case TURN_RIGHT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize + ModuleSize, TURN_STEPS
+                    Case TURN_LEFT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
+                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize + ModuleSize, TURN_STEPS
+                    Case LINE_TO
+                        If uVectors(lX, lY + 1).Bottom = LINE_TO Then
+                            lValue = 0
+                        End If
+                    End Select
+                    lY = lY + 1
+                ElseIf .Left <> 0 Then
+                    lValue = .Left
+                    .Left = 0
+                    Select Case lValue
+                    Case SUPERWIDE_RIGHT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - 2 * ModuleSize, 1 + lY * ModuleSize - ModuleSize * 3 \ 2, SUPERWIDE_STEPS
+                    Case WIDE_RIGHT
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                    Case WIDE_LEFT
+                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                    Case TURN_RIGHT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
+                    Case TURN_LEFT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
+                    Case LINE_TO
+                        If uVectors(lX - 1, lY).Left = LINE_TO Then
+                            lValue = 0
+                        End If
+                    End Select
+                    lX = lX - 1
+                ElseIf .Top <> 0 Then
+                    lValue = .Top
+                    .Top = 0
+                    Select Case lValue
+                    Case SUPERWIDE_RIGHT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize * 3 \ 2, 1 + lY * ModuleSize - 2 * ModuleSize, SUPERWIDE_STEPS
+                    Case WIDE_RIGHT
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                    Case WIDE_LEFT
+                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                    Case TURN_RIGHT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize - ModuleSize, TURN_STEPS
+                    Case TURN_LEFT
+                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
+                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize - ModuleSize, TURN_STEPS
+                    Case LINE_TO
+                        If uVectors(lX, lY - 1).Top = LINE_TO Then
+                            lValue = 0
+                        End If
+                    End Select
+                    lY = lY - 1
+                Else
+                    lValue = -1
+                End If
+            End With
+            If lValue < 0 Then
+                Exit Do
+            ElseIf lValue = LINE_TO Then
+                pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize
+            End If
+        Loop
+        If UBound(aPolys) < lNumPolys Then
+            ReDim Preserve aPolys(0 To 2 * UBound(aPolys)) As Long
+        End If
+        aPolys(lNumPolys) = lTotalPts - lStartPts
+        lNumPolys = lNumPolys + 1
+    Loop
+    ReDim Preserve aPolys(0 To lNumPolys - 1) As Long
+End Sub
+
+Private Function pvFindStartVector(uVectors() As RECT, lX As Long, lY As Long) As Boolean
+    For lY = 0 To UBound(uVectors, 2)
+        For lX = 0 To UBound(uVectors, 1)
+            With uVectors(lX, lY)
+                If .Left <> 0 And .Left <> SKIP_TO Or .Top <> 0 And .Top <> SKIP_TO _
+                        Or .Right <> 0 And .Right <> SKIP_TO Or .Bottom <> 0 And .Bottom <> SKIP_TO Then
+                    pvFindStartVector = True
+                    Exit Function
+                End If
+            End With
+        Next
+    Next
+End Function
+
+Private Sub pvAppendRightTurn(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX As Long, ByVal lY As Long, ByVal lSteps As Long)
+    Dim lIdx            As Long
+    Dim lPrevX          As Long
+    Dim lPrevY          As Long
+    Dim lCenterX        As Long
+    Dim lCenterY        As Long
+    Dim dblStartAngle   As Double
+    Dim lTempX          As Long
+    Dim lTempY          As Long
+    
+    lPrevX = uPoints(lTotalPts - 1).X
+    lPrevY = uPoints(lTotalPts - 1).Y
+    If lPrevX < lX And lPrevY < lY Then
+        lCenterX = lPrevX
+        lCenterY = lY
+        dblStartAngle = M_PI_2 * 3
+    ElseIf lPrevX < lX And Not lPrevY < lY Then
+        lCenterX = lX
+        lCenterY = lPrevY
+        dblStartAngle = M_PI_2 * 2
+    ElseIf Not lPrevX < lX And lPrevY < lY Then
+        lCenterX = lX
+        lCenterY = lPrevY
+        dblStartAngle = M_PI_2 * 0
+    ElseIf Not lPrevX < lX And Not lPrevY < lY Then
+        lCenterX = lPrevX
+        lCenterY = lY
+        dblStartAngle = M_PI_2 * 1
+    End If
+    For lIdx = 0 To lSteps
+        lTempX = Int(lCenterX + Abs(lX - lPrevX) * Cos(dblStartAngle + M_PI_2 * lIdx / lSteps) + 0.5)
+        lTempY = Int(lCenterY + Abs(lY - lPrevY) * Sin(dblStartAngle + M_PI_2 * lIdx / lSteps) + 0.5)
+        pvAppendLineTo uPoints, lTotalPts, lTempX, lTempY
+    Next
+    Debug.Assert lTempX = lX And lTempY = lY
+End Sub
+
+Private Sub pvAppendLeftTurn(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX As Long, ByVal lY As Long, ByVal lSteps As Long)
+    Dim lIdx            As Long
+    Dim lPrevX          As Long
+    Dim lPrevY          As Long
+    Dim lCenterX        As Long
+    Dim lCenterY        As Long
+    Dim dblStartAngle   As Double
+    Dim lTempX          As Long
+    Dim lTempY          As Long
+    
+    lPrevX = uPoints(lTotalPts - 1).X
+    lPrevY = uPoints(lTotalPts - 1).Y
+    If lPrevX < lX And lPrevY < lY Then
+        lCenterX = lX
+        lCenterY = lPrevY
+        dblStartAngle = M_PI_2 * 2
+    ElseIf lPrevX < lX And Not lPrevY < lY Then
+        lCenterX = lPrevX
+        lCenterY = lY
+        dblStartAngle = M_PI_2 * 1
+    ElseIf Not lPrevX < lX And lPrevY < lY Then
+        lCenterX = lPrevX
+        lCenterY = lY
+        dblStartAngle = M_PI_2 * 3
+    ElseIf Not lPrevX < lX And Not lPrevY < lY Then
+        lCenterX = lX
+        lCenterY = lPrevY
+        dblStartAngle = M_PI_2 * 0
+    End If
+    For lIdx = 0 To lSteps
+        lTempX = Int(lCenterX + Abs(lX - lPrevX) * Cos(dblStartAngle - M_PI_2 * lIdx / lSteps) + 0.5)
+        lTempY = Int(lCenterY + Abs(lY - lPrevY) * Sin(dblStartAngle - M_PI_2 * lIdx / lSteps) + 0.5)
+        pvAppendLineTo uPoints, lTotalPts, lTempX, lTempY
+    Next
+    Debug.Assert lTempX = lX And lTempY = lY
+End Sub
+
+Private Sub pvAppendLineTo(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX As Long, ByVal lY As Long)
+    If UBound(uPoints) < lTotalPts Then
+        ReDim Preserve uPoints(0 To 2 * UBound(uPoints)) As POINTAPI
+    End If
+    With uPoints(lTotalPts)
+        .X = lX
+        .Y = lY
+    End With
+    lTotalPts = lTotalPts + 1
+End Sub
