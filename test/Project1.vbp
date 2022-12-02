@@ -5,6 +5,7 @@ Module=mdQRCodegen; ..\src\mdQRCodegen.bas
 IconForm="Form1"
 Startup="Form1"
 HelpFile=""
+ExeName32="Project1.exe"
 Command32=""
 Name="QRCodegen"
 HelpContextID="0"

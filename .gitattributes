@@ -1,41 +1,86 @@
-# Default to binary (no diff)
-
-#* binary
-
 # VB6 source files (show diff + keep CRLF in zip download)
 
-.bas        text=auto eol=crlf
-.cls        text=auto eol=crlf
-.ctl        text=auto eol=crlf
-.dob        text=auto eol=crlf
-.dsr        text=auto eol=crlf
-.frm        text=auto eol=crlf
-.pag        text=auto eol=crlf
-.vbg        text=auto eol=crlf
-.vbl        text=auto eol=crlf
-.vbp        text=auto eol=crlf
-.vbr        text=auto eol=crlf
-.vbw        text=auto eol=crlf
+*.bas        working-tree-encoding=CP1252 text eol=crlf linguist-language=Visual-Basic-6.0
+*.cls        working-tree-encoding=CP1252 text eol=crlf linguist-language=Visual-Basic-6.0
+*.ctl        working-tree-encoding=CP1252 text eol=crlf linguist-language=Visual-Basic-6.0
+*.dob        working-tree-encoding=CP1252 text eol=crlf linguist-language=Visual-Basic-6.0
+*.dsr        working-tree-encoding=CP1252 text eol=crlf linguist-language=Visual-Basic-6.0
+*.frm        working-tree-encoding=CP1252 text eol=crlf linguist-language=Visual-Basic-6.0
+*.pag        working-tree-encoding=CP1252 text eol=crlf linguist-language=Visual-Basic-6.0
+*.vbg        working-tree-encoding=CP1252 text eol=crlf
+*.vbl        working-tree-encoding=CP1252 text eol=crlf
+*.vbp        working-tree-encoding=CP1252 text eol=crlf
+*.vbr        working-tree-encoding=CP1252 text eol=crlf
+*.vbw        working-tree-encoding=CP1252 text eol=crlf
  
 # Other source files (show diff + LF only in zip download)
 
-.asm        text=auto
-.asp        text=auto
-.bat        text=auto
-.c          text=auto
-.cpp        text=auto
-.dsp        text=auto
-.dsw        text=auto
-.h          text=auto
-.idl        text=auto
-.java       text=auto
-.js         text=auto
-.manifest   text=auto
-.odl        text=auto
-.php        text=auto
-.php3       text=auto
-.rc         text=auto
-.sln        text=auto
-.sql        text=auto
-.vb         text=auto
-.vbs        text=auto
+*.asm        text
+*.asp        text
+*.bat        text
+*.c          text
+*.cpp        text
+*.dsp        text
+*.dsw        text
+*.h          text
+*.idl        text
+*.java       text
+*.js         text
+*.manifest   text
+*.odl        text
+*.php        text
+*.php3       text
+*.rc         text
+*.sln        text
+*.sql        text
+*.vb         text
+*.vbs        text
+
+# Binary
+
+*.res        binary
+*.frx        binary
+*.ctx        binary
+*.dsx        binary
+*.exe        binary
+*.dll        binary
+*.ocx        binary
+*.cmp        binary
+*.pdb        binary
+*.tlb        binary
+*.xls        binary
+*.doc        binary
+*.ppt        binary
+*.xlsx       binary
+*.docx       binary
+*.pptx       binary
+*.chm        binary
+*.hlp        binary
+*.jpg        binary
+*.png        binary
+*.bmp        binary
+*.gif        binary
+*.ico        binary
+*.zip        binary
+*.cab        binary
+*.7z         binary
+*.gz         binary
+
+# Text files but keep as binary (no diff)
+
+# *.cfg        text
+# *.conf       text
+# *.csi        text
+# *.css        text
+# *.csv        text
+# *.def        text
+# *.htm        text
+# *.html       text
+# *.inf        text
+# *.ini        text
+# *.log        text
+# *.reg        text
+# *.rtf        text
+# *.txt        text
+# *.url        text
+# *.xml        text
