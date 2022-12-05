@@ -153,7 +153,7 @@ Private Const TURN_LEFT                 As Long = 2
 Private Const TURN_RIGHT                As Long = 3
 Private Const WIDE_LEFT                 As Long = 4
 Private Const WIDE_RIGHT                As Long = 5
-Private Const SUPERWIDE_LEFT            As Long = 6
+Private Const SUPERWIDE_LEFT            As Long = 6 '--- not used
 Private Const SUPERWIDE_RIGHT           As Long = 7
 Private Const SKIP_TO                   As Long = 8
 
@@ -346,7 +346,7 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     Const vbPicTypeEMetafile As Long = 4
     Dim uVectors()      As RECT
     Dim uPoints()       As POINTAPI
-    Dim aPolys()        As Long
+    Dim aSizes()        As Long
     Dim lQrSize         As Long
     Dim hDC             As LongPtr
     Dim uRect           As RECT
@@ -359,7 +359,7 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     
     On Error GoTo EH
     pvConstructVectors baQrCode, SquareModules, uVectors
-    pvConstructPolygons uVectors, ModuleSize, uPoints, aPolys
+    pvConstructPolygons uVectors, ModuleSize, uPoints, aSizes
     '--- draw polygons to enhanced metafile
     lQrSize = QRCodegenGetSize(baQrCode)
     hDC = CreateEnhMetaFile(0, 0, 0, 0)
@@ -369,7 +369,7 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     hBlackBrush = CreateSolidBrush(ForeColor)
     hPrevBrush = SelectObject(hDC, hBlackBrush)
     hPrevPen = SelectObject(hDC, GetStockObject(NULL_PEN))
-    Call PolyPolygon(hDC, uPoints(0), aPolys(0), UBound(aPolys) + 1)
+    Call PolyPolygon(hDC, uPoints(0), aSizes(0), UBound(aSizes) + 1)
     If hPrevBrush <> 0 Then
         Call SelectObject(hDC, hPrevBrush)
         hPrevBrush = 0
@@ -1531,114 +1531,97 @@ Private Sub pvConstructVectors(baQrCode() As Byte, ByVal SquareModules As Boolea
     Next
 End Sub
 
-Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uPoints() As POINTAPI, aPolys() As Long)
+Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uPoints() As POINTAPI, aSizes() As Long)
     Const TURN_STEPS     As Long = 4
     Const WIDE_STEPS     As Long = 2 * TURN_STEPS
     Const SUPERWIDE_STEPS As Long = 3 * TURN_STEPS
     Dim lX              As Long
     Dim lY              As Long
     Dim lNumPolys       As Long
-    Dim lStartPts       As Long
-    Dim lTotalPts       As Long
+    Dim lPos            As Long
+    Dim lSize           As Long
     Dim lValue          As Long
     
     ReDim uPoints(0 To 8) As POINTAPI
-    ReDim aPolys(0 To 8) As Long
+    ReDim aSizes(0 To 8) As Long
     Do While pvFindStartVector(uVectors, lX, lY)
-        lStartPts = lTotalPts
-        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize
+        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize
         Do
             With uVectors(lX, lY)
                 If .Right <> 0 Then
                     lValue = .Right
                     .Right = 0
                     Select Case lValue
-                    Case SUPERWIDE_RIGHT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + 2 * ModuleSize, 1 + lY * ModuleSize + ModuleSize * 3 \ 2, SUPERWIDE_STEPS
-                    Case WIDE_RIGHT
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
-                    Case WIDE_LEFT
-                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
-                    Case TURN_RIGHT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
                     Case TURN_LEFT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
-                    Case LINE_TO
-                        If uVectors(lX + 1, lY).Right = LINE_TO Then
-                            lValue = 0
-                        End If
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
+                    Case TURN_RIGHT
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
+                    Case WIDE_LEFT
+                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                    Case WIDE_RIGHT
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                    Case SUPERWIDE_RIGHT
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + 2 * ModuleSize, 1 + lY * ModuleSize + ModuleSize * 3 \ 2, SUPERWIDE_STEPS
                     End Select
                     lX = lX + 1
                 ElseIf .Bottom <> 0 Then
                     lValue = .Bottom
                     .Bottom = 0
                     Select Case lValue
-                    Case SUPERWIDE_RIGHT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize * 3 \ 2, 1 + lY * ModuleSize + 2 * ModuleSize, SUPERWIDE_STEPS
-                    Case WIDE_RIGHT
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
-                    Case WIDE_LEFT
-                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
-                    Case TURN_RIGHT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize + ModuleSize, TURN_STEPS
                     Case TURN_LEFT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
-                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize + ModuleSize, TURN_STEPS
-                    Case LINE_TO
-                        If uVectors(lX, lY + 1).Bottom = LINE_TO Then
-                            lValue = 0
-                        End If
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
+                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize + ModuleSize, TURN_STEPS
+                    Case TURN_RIGHT
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize + ModuleSize, TURN_STEPS
+                    Case WIDE_LEFT
+                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                    Case WIDE_RIGHT
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                    Case SUPERWIDE_RIGHT
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize * 3 \ 2, 1 + lY * ModuleSize + 2 * ModuleSize, SUPERWIDE_STEPS
                     End Select
                     lY = lY + 1
                 ElseIf .Left <> 0 Then
                     lValue = .Left
                     .Left = 0
                     Select Case lValue
-                    Case SUPERWIDE_RIGHT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - 2 * ModuleSize, 1 + lY * ModuleSize - ModuleSize * 3 \ 2, SUPERWIDE_STEPS
-                    Case WIDE_RIGHT
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
-                    Case WIDE_LEFT
-                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
-                    Case TURN_RIGHT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
                     Case TURN_LEFT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
-                    Case LINE_TO
-                        If uVectors(lX - 1, lY).Left = LINE_TO Then
-                            lValue = 0
-                        End If
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
+                    Case TURN_RIGHT
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
+                    Case WIDE_LEFT
+                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                    Case WIDE_RIGHT
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                    Case SUPERWIDE_RIGHT
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - 2 * ModuleSize, 1 + lY * ModuleSize - ModuleSize * 3 \ 2, SUPERWIDE_STEPS
                     End Select
                     lX = lX - 1
                 ElseIf .Top <> 0 Then
                     lValue = .Top
                     .Top = 0
                     Select Case lValue
-                    Case SUPERWIDE_RIGHT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize * 3 \ 2, 1 + lY * ModuleSize - 2 * ModuleSize, SUPERWIDE_STEPS
-                    Case WIDE_RIGHT
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
-                    Case WIDE_LEFT
-                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
-                    Case TURN_RIGHT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
-                        pvAppendRightTurn uPoints, lTotalPts, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize - ModuleSize, TURN_STEPS
                     Case TURN_LEFT
-                        pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
-                        pvAppendLeftTurn uPoints, lTotalPts, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize - ModuleSize, TURN_STEPS
-                    Case LINE_TO
-                        If uVectors(lX, lY - 1).Top = LINE_TO Then
-                            lValue = 0
-                        End If
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
+                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize - ModuleSize, TURN_STEPS
+                    Case TURN_RIGHT
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize - ModuleSize, TURN_STEPS
+                    Case WIDE_LEFT
+                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                    Case WIDE_RIGHT
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                    Case SUPERWIDE_RIGHT
+                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize * 3 \ 2, 1 + lY * ModuleSize - 2 * ModuleSize, SUPERWIDE_STEPS
                     End Select
                     lY = lY - 1
                 Else
@@ -1648,16 +1631,18 @@ Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uP
             If lValue < 0 Then
                 Exit Do
             ElseIf lValue = LINE_TO Then
-                pvAppendLineTo uPoints, lTotalPts, 1 + lX * ModuleSize, 1 + lY * ModuleSize
+                pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize
             End If
         Loop
-        If UBound(aPolys) < lNumPolys Then
-            ReDim Preserve aPolys(0 To 2 * UBound(aPolys)) As Long
+        If UBound(aSizes) < lNumPolys Then
+            ReDim Preserve aSizes(0 To 2 * UBound(aSizes)) As Long
         End If
-        aPolys(lNumPolys) = lTotalPts - lStartPts
+        aSizes(lNumPolys) = lSize
         lNumPolys = lNumPolys + 1
+        lPos = lPos + lSize
+        lSize = 0
     Loop
-    ReDim Preserve aPolys(0 To lNumPolys - 1) As Long
+    ReDim Preserve aSizes(0 To lNumPolys - 1) As Long
 End Sub
 
 Private Function pvFindStartVector(uVectors() As RECT, lX As Long, lY As Long) As Boolean
@@ -1674,7 +1659,7 @@ Private Function pvFindStartVector(uVectors() As RECT, lX As Long, lY As Long) A
     Next
 End Function
 
-Private Sub pvAppendRightTurn(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX As Long, ByVal lY As Long, ByVal lSteps As Long)
+Private Sub pvAppendRightTurn(uPoints() As POINTAPI, ByVal lPos As Long, lSize As Long, ByVal lX As Long, ByVal lY As Long, ByVal lSteps As Long)
     Dim lIdx            As Long
     Dim lPrevX          As Long
     Dim lPrevY          As Long
@@ -1684,8 +1669,9 @@ Private Sub pvAppendRightTurn(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX
     Dim lTempX          As Long
     Dim lTempY          As Long
     
-    lPrevX = uPoints(lTotalPts - 1).X
-    lPrevY = uPoints(lTotalPts - 1).Y
+    Debug.Assert lSize > 0
+    lPrevX = uPoints(lPos + lSize - 1).X
+    lPrevY = uPoints(lPos + lSize - 1).Y
     If lPrevX < lX And lPrevY < lY Then
         lCenterX = lPrevX
         lCenterY = lY
@@ -1706,12 +1692,12 @@ Private Sub pvAppendRightTurn(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX
     For lIdx = 0 To lSteps
         lTempX = Int(lCenterX + Abs(lX - lPrevX) * Cos(dblStartAngle + M_PI_2 * lIdx / lSteps) + 0.5)
         lTempY = Int(lCenterY + Abs(lY - lPrevY) * Sin(dblStartAngle + M_PI_2 * lIdx / lSteps) + 0.5)
-        pvAppendLineTo uPoints, lTotalPts, lTempX, lTempY
+        pvAppendLineTo uPoints, lPos, lSize, lTempX, lTempY
     Next
     Debug.Assert lTempX = lX And lTempY = lY
 End Sub
 
-Private Sub pvAppendLeftTurn(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX As Long, ByVal lY As Long, ByVal lSteps As Long)
+Private Sub pvAppendLeftTurn(uPoints() As POINTAPI, ByVal lPos As Long, lSize As Long, ByVal lX As Long, ByVal lY As Long, ByVal lSteps As Long)
     Dim lIdx            As Long
     Dim lPrevX          As Long
     Dim lPrevY          As Long
@@ -1721,8 +1707,9 @@ Private Sub pvAppendLeftTurn(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX 
     Dim lTempX          As Long
     Dim lTempY          As Long
     
-    lPrevX = uPoints(lTotalPts - 1).X
-    lPrevY = uPoints(lTotalPts - 1).Y
+    Debug.Assert lSize > 0
+    lPrevX = uPoints(lPos + lSize - 1).X
+    lPrevY = uPoints(lPos + lSize - 1).Y
     If lPrevX < lX And lPrevY < lY Then
         lCenterX = lX
         lCenterY = lPrevY
@@ -1743,18 +1730,34 @@ Private Sub pvAppendLeftTurn(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX 
     For lIdx = 0 To lSteps
         lTempX = Int(lCenterX + Abs(lX - lPrevX) * Cos(dblStartAngle - M_PI_2 * lIdx / lSteps) + 0.5)
         lTempY = Int(lCenterY + Abs(lY - lPrevY) * Sin(dblStartAngle - M_PI_2 * lIdx / lSteps) + 0.5)
-        pvAppendLineTo uPoints, lTotalPts, lTempX, lTempY
+        pvAppendLineTo uPoints, lPos, lSize, lTempX, lTempY
     Next
     Debug.Assert lTempX = lX And lTempY = lY
 End Sub
 
-Private Sub pvAppendLineTo(uPoints() As POINTAPI, lTotalPts As Long, ByVal lX As Long, ByVal lY As Long)
-    If UBound(uPoints) < lTotalPts Then
+Private Sub pvAppendLineTo(uPoints() As POINTAPI, ByVal lPos As Long, lSize As Long, ByVal lX As Long, ByVal lY As Long)
+    If lSize >= 2 Then
+        '--- remove redundant last point if the new one is on the same line
+        If pvPointsInLine(uPoints(lPos + lSize - 2), uPoints(lPos + lSize - 1), lX, lY) Then
+            lSize = lSize - 1
+        End If
+    End If
+    If UBound(uPoints) < lPos + lSize Then
         ReDim Preserve uPoints(0 To 2 * UBound(uPoints)) As POINTAPI
     End If
-    With uPoints(lTotalPts)
+    With uPoints(lPos + lSize)
         .X = lX
         .Y = lY
     End With
-    lTotalPts = lTotalPts + 1
+    lSize = lSize + 1
 End Sub
+
+Private Function pvPointsInLine(uA As POINTAPI, uB As POINTAPI, ByVal lX As Long, ByVal lY As Long) As Boolean
+    If uA.X = lX Then
+        pvPointsInLine = uB.X = lX
+    ElseIf uA.Y = lY Then
+        pvPointsInLine = uB.Y = lY
+    Else
+        pvPointsInLine = (uA.X - lX) * (uA.Y - lY) = (lX - uB.X) * (lY - uB.Y)
+    End If
+End Function
