@@ -1,5 +1,5 @@
 <div align="center">
-<img width="407" height="463" src="https://dl.unicontsoft.com/upload/pix/ss_qr_code3.png">
+<img width="418" height="463" src="https://dl.unicontsoft.com/upload/pix/ss_qr_code5.png">
 
 ## VbQRCodegen
 QR Code generator library for VB6/VBA
