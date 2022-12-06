@@ -76,6 +76,7 @@ Private Declare PtrSafe Function SetStretchBltMode Lib "gdi32" (ByVal hDC As Lon
 Private Declare PtrSafe Function StretchBlt Lib "gdi32" (ByVal hDC As LongPtr, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hdcSrc As LongPtr, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
 Private Declare PtrSafe Function GetDeviceCaps Lib "gdi32" (ByVal hDC As LongPtr, ByVal nIndex As Long) As Long
 Private Declare PtrSafe Function PolyPolygon Lib "gdi32" (ByVal hDC As LongPtr, lpPoint As Any, lpPolyCounts As Any, ByVal nCount As Long) As Long
+Private Declare PtrSafe Function SetMapMode Lib "gdi32" (ByVal hCD As LongPtr, ByVal nMapMode As Long) As Long
 #Else
 Private Enum LongPtr
     [_]
@@ -99,6 +100,7 @@ Private Declare Function SetStretchBltMode Lib "gdi32" (ByVal hDC As LongPtr, By
 Private Declare Function StretchBlt Lib "gdi32" (ByVal hDC As LongPtr, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hdcSrc As LongPtr, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
 Private Declare Function GetDeviceCaps Lib "gdi32" (ByVal hDC As LongPtr, ByVal nIndex As Long) As Long
 Private Declare Function PolyPolygon Lib "gdi32" (ByVal hDC As LongPtr, lpPoint As Any, lpPolyCounts As Any, ByVal nCount As Long) As Long
+Private Declare Function SetMapMode Lib "gdi32" (ByVal hCD As LongPtr, ByVal nMapMode As Long) As Long
 #End If
 
 Private Type POINTAPI
@@ -169,7 +171,7 @@ Private IID_IPersistStream(0 To 3)                   As Long '--- 00000109-0000-
 
 Public Function QRCodegenBarcode(TextOrByteArray As Variant, _
             Optional ByVal ForeColor As OLE_COLOR = vbBlack, _
-            Optional ByVal ModuleSize As Long = 20, _
+            Optional ByVal ModuleSize As Long = 120, _
             Optional ByVal SquareModules As Boolean, _
             Optional ByVal Ecl As QRCodegenEcc = QRCodegenEcc_LOW, _
             Optional ByVal MinVersion As Long = VERSION_MIN, _
@@ -339,10 +341,11 @@ End Function
 
 Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
             Optional ByVal ForeColor As OLE_COLOR = vbBlack, _
-            Optional ByVal ModuleSize As Long = 20, _
+            Optional ByVal ModuleSize As Long = 120, _
             Optional ByVal SquareModules As Boolean) As StdPicture
     Const WHITE_BRUSH   As Long = 0
     Const NULL_PEN      As Long = 8
+    Const MM_TWIPS      As Long = 6
     Const vbPicTypeEMetafile As Long = 4
     Dim uVectors()      As RECT
     Dim uPoints()       As POINTAPI
@@ -353,6 +356,7 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     Dim hBlackBrush     As LongPtr
     Dim hPrevBrush      As LongPtr
     Dim hPrevPen        As LongPtr
+    Dim lIdx            As Long
     Dim uDesc           As PICTDESC
     Dim hResult         As Long
     Dim vErr            As Variant
@@ -363,12 +367,19 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     '--- draw polygons to enhanced metafile
     lQrSize = QRCodegenGetSize(baQrCode)
     hDC = CreateEnhMetaFile(0, 0, 0, 0)
-    uRect.Right = 1 + lQrSize * ModuleSize + 2
-    uRect.Bottom = 1 + lQrSize * ModuleSize + 2
+    Call SetMapMode(hDC, MM_TWIPS)
+    uRect.Right = (lQrSize + 1) * ModuleSize
+    uRect.Bottom = (lQrSize + 1) * ModuleSize
     Call FillRect(hDC, uRect, GetStockObject(WHITE_BRUSH))
     hBlackBrush = CreateSolidBrush(ForeColor)
     hPrevBrush = SelectObject(hDC, hBlackBrush)
     hPrevPen = SelectObject(hDC, GetStockObject(NULL_PEN))
+    For lIdx = 0 To UBound(uPoints)
+        With uPoints(lIdx)
+            .X = ModuleSize \ 2 + .X - 1
+            .Y = ModuleSize \ 2 + (lQrSize) * ModuleSize - .Y - 1
+        End With
+    Next
     Call PolyPolygon(hDC, uPoints(0), aSizes(0), UBound(aSizes) + 1)
     If hPrevBrush <> 0 Then
         Call SelectObject(hDC, hPrevBrush)
@@ -1545,7 +1556,7 @@ Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uP
     ReDim uPoints(0 To 8) As POINTAPI
     ReDim aSizes(0 To 8) As Long
     Do While pvFindStartVector(uVectors, lX, lY)
-        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize
+        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize
         Do
             With uVectors(lX, lY)
                 If .Right <> 0 Then
@@ -1553,18 +1564,18 @@ Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uP
                     .Right = 0
                     Select Case lValue
                     Case TURN_LEFT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize + ModuleSize \ 2, lY * ModuleSize
+                        pvAppendLeftTurn uPoints, lPos, lSize, lX * ModuleSize + ModuleSize, lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
                     Case TURN_RIGHT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize + ModuleSize \ 2, lY * ModuleSize
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize + ModuleSize, lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
                     Case WIDE_LEFT
-                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                        pvAppendLeftTurn uPoints, lPos, lSize, lX * ModuleSize + ModuleSize, lY * ModuleSize - ModuleSize, WIDE_STEPS
                     Case WIDE_RIGHT
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize + ModuleSize, lY * ModuleSize + ModuleSize, WIDE_STEPS
                     Case SUPERWIDE_RIGHT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + 2 * ModuleSize, 1 + lY * ModuleSize + ModuleSize * 3 \ 2, SUPERWIDE_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize + ModuleSize \ 2, lY * ModuleSize
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize + 2 * ModuleSize, lY * ModuleSize + ModuleSize * 3 \ 2, SUPERWIDE_STEPS
                     End Select
                     lX = lX + 1
                 ElseIf .Bottom <> 0 Then
@@ -1572,18 +1583,18 @@ Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uP
                     .Bottom = 0
                     Select Case lValue
                     Case TURN_LEFT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
-                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize + ModuleSize, TURN_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize + ModuleSize \ 2
+                        pvAppendLeftTurn uPoints, lPos, lSize, lX * ModuleSize + ModuleSize \ 2, lY * ModuleSize + ModuleSize, TURN_STEPS
                     Case TURN_RIGHT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize + ModuleSize, TURN_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize + ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize - ModuleSize \ 2, lY * ModuleSize + ModuleSize, TURN_STEPS
                     Case WIDE_LEFT
-                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                        pvAppendLeftTurn uPoints, lPos, lSize, lX * ModuleSize + ModuleSize, lY * ModuleSize + ModuleSize, WIDE_STEPS
                     Case WIDE_RIGHT
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize - ModuleSize, lY * ModuleSize + ModuleSize, WIDE_STEPS
                     Case SUPERWIDE_RIGHT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize * 3 \ 2, 1 + lY * ModuleSize + 2 * ModuleSize, SUPERWIDE_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize + ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize - ModuleSize * 3 \ 2, lY * ModuleSize + 2 * ModuleSize, SUPERWIDE_STEPS
                     End Select
                     lY = lY + 1
                 ElseIf .Left <> 0 Then
@@ -1591,18 +1602,18 @@ Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uP
                     .Left = 0
                     Select Case lValue
                     Case TURN_LEFT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize - ModuleSize \ 2, lY * ModuleSize
+                        pvAppendLeftTurn uPoints, lPos, lSize, lX * ModuleSize - ModuleSize, lY * ModuleSize + ModuleSize \ 2, TURN_STEPS
                     Case TURN_RIGHT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize - ModuleSize \ 2, lY * ModuleSize
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize - ModuleSize, lY * ModuleSize - ModuleSize \ 2, TURN_STEPS
                     Case WIDE_LEFT
-                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize + ModuleSize, WIDE_STEPS
+                        pvAppendLeftTurn uPoints, lPos, lSize, lX * ModuleSize - ModuleSize, lY * ModuleSize + ModuleSize, WIDE_STEPS
                     Case WIDE_RIGHT
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize - ModuleSize, lY * ModuleSize - ModuleSize, WIDE_STEPS
                     Case SUPERWIDE_RIGHT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - 2 * ModuleSize, 1 + lY * ModuleSize - ModuleSize * 3 \ 2, SUPERWIDE_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize - ModuleSize \ 2, lY * ModuleSize
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize - 2 * ModuleSize, lY * ModuleSize - ModuleSize * 3 \ 2, SUPERWIDE_STEPS
                     End Select
                     lX = lX - 1
                 ElseIf .Top <> 0 Then
@@ -1610,18 +1621,18 @@ Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uP
                     .Top = 0
                     Select Case lValue
                     Case TURN_LEFT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
-                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize \ 2, 1 + lY * ModuleSize - ModuleSize, TURN_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize - ModuleSize \ 2
+                        pvAppendLeftTurn uPoints, lPos, lSize, lX * ModuleSize - ModuleSize \ 2, lY * ModuleSize - ModuleSize, TURN_STEPS
                     Case TURN_RIGHT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize \ 2, 1 + lY * ModuleSize - ModuleSize, TURN_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize - ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize + ModuleSize \ 2, lY * ModuleSize - ModuleSize, TURN_STEPS
                     Case WIDE_LEFT
-                        pvAppendLeftTurn uPoints, lPos, lSize, 1 + lX * ModuleSize - ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                        pvAppendLeftTurn uPoints, lPos, lSize, lX * ModuleSize - ModuleSize, lY * ModuleSize - ModuleSize, WIDE_STEPS
                     Case WIDE_RIGHT
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize, 1 + lY * ModuleSize - ModuleSize, WIDE_STEPS
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize + ModuleSize, lY * ModuleSize - ModuleSize, WIDE_STEPS
                     Case SUPERWIDE_RIGHT
-                        pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize - ModuleSize \ 2
-                        pvAppendRightTurn uPoints, lPos, lSize, 1 + lX * ModuleSize + ModuleSize * 3 \ 2, 1 + lY * ModuleSize - 2 * ModuleSize, SUPERWIDE_STEPS
+                        pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize - ModuleSize \ 2
+                        pvAppendRightTurn uPoints, lPos, lSize, lX * ModuleSize + ModuleSize * 3 \ 2, lY * ModuleSize - 2 * ModuleSize, SUPERWIDE_STEPS
                     End Select
                     lY = lY - 1
                 Else
@@ -1631,7 +1642,7 @@ Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uP
             If lValue < 0 Then
                 Exit Do
             ElseIf lValue = LINE_TO Then
-                pvAppendLineTo uPoints, lPos, lSize, 1 + lX * ModuleSize, 1 + lY * ModuleSize
+                pvAppendLineTo uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize
             End If
         Loop
         If UBound(aSizes) < lNumPolys Then
@@ -1643,6 +1654,7 @@ Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uP
         lSize = 0
     Loop
     ReDim Preserve aSizes(0 To lNumPolys - 1) As Long
+    ReDim Preserve uPoints(0 To lPos - 1) As POINTAPI
 End Sub
 
 Private Function pvFindStartVector(uVectors() As RECT, lX As Long, lY As Long) As Boolean

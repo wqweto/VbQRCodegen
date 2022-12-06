@@ -53,9 +53,20 @@ Option Explicit
 DefObj A-Z
 
 Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    Dim baBarCode()     As Byte
+    Dim lQrSize         As Long
+    Dim lModuleSize     As Long
+    
     If KeyCode = 67 And Shift = vbCtrlMask Then
         Clipboard.Clear
         Clipboard.SetData Image1.Picture
+    ElseIf KeyCode = 67 And Shift = (vbCtrlMask Or vbShiftMask) Then
+        If QRCodegenEncode(Text1.Text, baBarCode) Then
+            lQrSize = QRCodegenGetSize(baBarCode)
+            lModuleSize = Int((Image1.Width * 15) / (lQrSize * Screen.TwipsPerPixelX) + 0.5)
+            Clipboard.Clear
+            Clipboard.SetData QRCodegenConvertToPicture(baBarCode, vbRed, ModuleSize:=lModuleSize, SquareModules:=(Check1.Value = vbChecked))
+        End If
     End If
 End Sub
 
