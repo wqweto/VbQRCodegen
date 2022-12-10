@@ -12,7 +12,8 @@ Attribute VB_Name = "mdQRCodegen"
 Option Explicit
 DefObj A-Z
 
-#Const HasPtrSafe = (VBA7 <> 0) Or (TWINBASIC <> 0)
+#Const HasPtrSafe = (VBA7 <> 0)
+#Const ImplBezier = True
 
 '=========================================================================
 ' Public enums
@@ -77,6 +78,11 @@ Private Declare PtrSafe Function StretchBlt Lib "gdi32" (ByVal hDC As LongPtr, B
 Private Declare PtrSafe Function GetDeviceCaps Lib "gdi32" (ByVal hDC As LongPtr, ByVal nIndex As Long) As Long
 Private Declare PtrSafe Function PolyPolygon Lib "gdi32" (ByVal hDC As LongPtr, lpPoint As Any, lpPolyCounts As Any, ByVal nCount As Long) As Long
 Private Declare PtrSafe Function SetMapMode Lib "gdi32" (ByVal hCD As LongPtr, ByVal nMapMode As Long) As Long
+Private Declare PtrSafe Function PolyBezierTo Lib "gdi32" (ByVal hDC As LongPtr, lpPoint As Any, ByVal nCount As Long) As Long
+Private Declare PtrSafe Function MoveToEx Lib "gdi32" (ByVal hDC As LongPtr, ByVal lX As Long, ByVal lY As Long, Optional ByVal lpPt As LongPtr = 0) As Long
+Private Declare PtrSafe Function BeginPath Lib "gdi32" (ByVal hDC As LongPtr) As Long
+Private Declare PtrSafe Function EndPath Lib "gdi32" (ByVal hDC As LongPtr) As Long
+Private Declare PtrSafe Function FillPath Lib "gdi32" (ByVal hDC As LongPtr) As Long
 #Else
 Private Enum LongPtr
     [_]
@@ -101,6 +107,11 @@ Private Declare Function StretchBlt Lib "gdi32" (ByVal hDC As LongPtr, ByVal X A
 Private Declare Function GetDeviceCaps Lib "gdi32" (ByVal hDC As LongPtr, ByVal nIndex As Long) As Long
 Private Declare Function PolyPolygon Lib "gdi32" (ByVal hDC As LongPtr, lpPoint As Any, lpPolyCounts As Any, ByVal nCount As Long) As Long
 Private Declare Function SetMapMode Lib "gdi32" (ByVal hCD As LongPtr, ByVal nMapMode As Long) As Long
+Private Declare Function PolyBezierTo Lib "gdi32" (ByVal hDC As LongPtr, lpPoint As Any, ByVal nCount As Long) As Long
+Private Declare Function MoveToEx Lib "gdi32" (ByVal hDC As LongPtr, ByVal lX As Long, ByVal lY As Long, Optional ByVal lpPt As LongPtr = 0) As Long
+Private Declare Function BeginPath Lib "gdi32" (ByVal hDC As LongPtr) As Long
+Private Declare Function EndPath Lib "gdi32" (ByVal hDC As LongPtr) As Long
+Private Declare Function FillPath Lib "gdi32" (ByVal hDC As LongPtr) As Long
 #End If
 
 Private Type POINTAPI
@@ -158,6 +169,7 @@ Private Const WIDE_RIGHT                As Long = 5
 Private Const SUPERWIDE_LEFT            As Long = 6 '--- not used
 Private Const SUPERWIDE_RIGHT           As Long = 7
 Private Const SKIP_TO                   As Long = 8
+Private Const BEZIER_TO                 As Long = 9
 
 Private LNG_POW2(0 To 31)                            As Long
 Private ECC_CODEWORDS_PER_BLOCK(0 To 3, 0 To 40)     As Long
@@ -360,10 +372,17 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
     Dim uDesc           As PICTDESC
     Dim hResult         As Long
     Dim vErr            As Variant
+    Dim lPos            As Long
+    Dim lSize           As Long
     
     On Error GoTo EH
     pvConstructVectors baQrCode, SquareModules, uVectors
+#If ImplBezier Then
+    pvConstructBezier uVectors, ModuleSize, uPoints, aSizes
+#Else
     pvConstructPolygons uVectors, ModuleSize, uPoints, aSizes
+#End If
+    Debug.Print "uPoints=" & UBound(uPoints)
     '--- draw polygons to enhanced metafile
     lQrSize = QRCodegenGetSize(baQrCode)
     hDC = CreateEnhMetaFile(0, 0, 0, 0)
@@ -380,7 +399,19 @@ Public Function QRCodegenConvertToPicture(baQrCode() As Byte, _
             .Y = ModuleSize \ 2 + (lQrSize) * ModuleSize - .Y - 1
         End With
     Next
+#If ImplBezier Then
+    Call BeginPath(hDC)
+    For lIdx = 0 To UBound(aSizes)
+        lSize = aSizes(lIdx)
+        Call MoveToEx(hDC, uPoints(lPos).X, uPoints(lPos).Y)
+        Call PolyBezierTo(hDC, uPoints(lPos + 1), lSize - 1)
+        lPos = lPos + lSize
+    Next
+    Call EndPath(hDC)
+    Call FillPath(hDC)
+#Else
     Call PolyPolygon(hDC, uPoints(0), aSizes(0), UBound(aSizes) + 1)
+#End If
     If hPrevBrush <> 0 Then
         Call SelectObject(hDC, hPrevBrush)
         hPrevBrush = 0
@@ -1412,6 +1443,20 @@ Private Function DispCallByVtbl(pUnk As stdole.IUnknown, ByVal lIndex As Long, P
     End If
 End Function
 
+Private Function pvFindStartVector(uVectors() As RECT, lX As Long, lY As Long) As Boolean
+    For lY = 0 To UBound(uVectors, 2)
+        For lX = 0 To UBound(uVectors, 1)
+            With uVectors(lX, lY)
+                If .Left <> 0 And .Left <> SKIP_TO Or .Top <> 0 And .Top <> SKIP_TO _
+                        Or .Right <> 0 And .Right <> SKIP_TO Or .Bottom <> 0 And .Bottom <> SKIP_TO Then
+                    pvFindStartVector = True
+                    Exit Function
+                End If
+            End With
+        Next
+    Next
+End Function
+
 Private Sub pvConstructVectors(baQrCode() As Byte, ByVal SquareModules As Boolean, uVectors() As RECT)
     Dim lQrSize         As Long
     Dim lX              As Long
@@ -1542,6 +1587,261 @@ Private Sub pvConstructVectors(baQrCode() As Byte, ByVal SquareModules As Boolea
     Next
 End Sub
 
+#If ImplBezier Then
+Private Sub pvConstructBezier(uVectors() As RECT, ByVal ModuleSize As Long, uPoints() As POINTAPI, aSizes() As Long)
+    Const COEFF As Double = 0.552284749830794    ' 4/3*(Sqr(2)-1)
+    Dim lX              As Long
+    Dim lY              As Long
+    Dim lNumPolys       As Long
+    Dim lPos            As Long
+    Dim lSize           As Long
+    Dim lValue          As Long
+    Dim uFrom           As POINTAPI
+    Dim uTo             As POINTAPI
+    
+    ReDim uPoints(0 To 8) As POINTAPI
+    ReDim aSizes(0 To 8) As Long
+    Do While pvFindStartVector(uVectors, lX, lY)
+        pvAppendBezier uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize
+        Do
+            With uVectors(lX, lY)
+                If .Right <> 0 Then
+                    lValue = .Right
+                    .Right = 0
+                    Select Case lValue
+                    Case TURN_LEFT
+                        uFrom.X = lX * ModuleSize + ModuleSize \ 2
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize + ModuleSize
+                        uTo.Y = lY * ModuleSize - ModuleSize \ 2
+                        lValue = BEZIER_TO
+                    Case TURN_RIGHT
+                        uFrom.X = lX * ModuleSize + ModuleSize \ 2
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize + ModuleSize
+                        uTo.Y = lY * ModuleSize + ModuleSize \ 2
+                        lValue = BEZIER_TO
+                    Case WIDE_LEFT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize + ModuleSize
+                        uTo.Y = lY * ModuleSize - ModuleSize
+                        lValue = BEZIER_TO
+                    Case WIDE_RIGHT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize + ModuleSize
+                        uTo.Y = lY * ModuleSize + ModuleSize
+                        lValue = BEZIER_TO
+                    Case SUPERWIDE_RIGHT
+                        uFrom.X = lX * ModuleSize + ModuleSize \ 2
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize + ModuleSize * 2
+                        uTo.Y = lY * ModuleSize + ModuleSize * 3 \ 2
+                        lValue = BEZIER_TO
+                    End Select
+                    If lValue = BEZIER_TO Then
+                        pvAppendBezier uPoints, lPos, lSize, uFrom.X, uFrom.Y
+                        pvAppendBezier uPoints, lPos, lSize, uTo.X, uTo.Y, _
+                            uFrom.X + COEFF * (uTo.X - uFrom.X), uFrom.Y, _
+                            uTo.X, uTo.Y + COEFF * (uFrom.Y - uTo.Y)
+                    End If
+                    lX = lX + 1
+                ElseIf .Bottom <> 0 Then
+                    lValue = .Bottom
+                    .Bottom = 0
+                    Select Case lValue
+                    Case TURN_LEFT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize + ModuleSize \ 2
+                        uTo.X = lX * ModuleSize + ModuleSize \ 2
+                        uTo.Y = lY * ModuleSize + ModuleSize
+                        lValue = BEZIER_TO
+                    Case TURN_RIGHT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize + ModuleSize \ 2
+                        uTo.X = lX * ModuleSize - ModuleSize \ 2
+                        uTo.Y = lY * ModuleSize + ModuleSize
+                        lValue = BEZIER_TO
+                    Case WIDE_LEFT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize + ModuleSize
+                        uTo.Y = lY * ModuleSize + ModuleSize
+                        lValue = BEZIER_TO
+                    Case WIDE_RIGHT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize - ModuleSize
+                        uTo.Y = lY * ModuleSize + ModuleSize
+                        lValue = BEZIER_TO
+                    Case SUPERWIDE_RIGHT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize + ModuleSize \ 2
+                        uTo.X = lX * ModuleSize - ModuleSize * 3 \ 2
+                        uTo.Y = lY * ModuleSize + ModuleSize * 2
+                        lValue = BEZIER_TO
+                    End Select
+                    If lValue = BEZIER_TO Then
+                        pvAppendBezier uPoints, lPos, lSize, uFrom.X, uFrom.Y
+                        pvAppendBezier uPoints, lPos, lSize, uTo.X, uTo.Y, _
+                            uFrom.X, uFrom.Y - COEFF * (uFrom.Y - uTo.Y), _
+                            uTo.X - COEFF * (uTo.X - uFrom.X), uTo.Y
+                    End If
+                    lY = lY + 1
+                ElseIf .Left <> 0 Then
+                    lValue = .Left
+                    .Left = 0
+                     Select Case lValue
+                    Case TURN_LEFT
+                        uFrom.X = lX * ModuleSize - ModuleSize \ 2
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize - ModuleSize
+                        uTo.Y = lY * ModuleSize + ModuleSize \ 2
+                        lValue = BEZIER_TO
+                    Case TURN_RIGHT
+                        uFrom.X = lX * ModuleSize - ModuleSize \ 2
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize - ModuleSize
+                        uTo.Y = lY * ModuleSize - ModuleSize \ 2
+                        lValue = BEZIER_TO
+                    Case WIDE_LEFT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize - ModuleSize
+                        uTo.Y = lY * ModuleSize + ModuleSize
+                        lValue = BEZIER_TO
+                    Case WIDE_RIGHT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize - ModuleSize
+                        uTo.Y = lY * ModuleSize - ModuleSize
+                        lValue = BEZIER_TO
+                    Case SUPERWIDE_RIGHT
+                        uFrom.X = lX * ModuleSize - ModuleSize \ 2
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize - ModuleSize * 2
+                        uTo.Y = lY * ModuleSize - ModuleSize * 3 \ 2
+                        lValue = BEZIER_TO
+                    End Select
+                    If lValue = BEZIER_TO Then
+                        pvAppendBezier uPoints, lPos, lSize, uFrom.X, uFrom.Y
+                        pvAppendBezier uPoints, lPos, lSize, uTo.X, uTo.Y, _
+                            uFrom.X + COEFF * (uTo.X - uFrom.X), uFrom.Y, _
+                            uTo.X, uTo.Y + COEFF * (uFrom.Y - uTo.Y)
+                    End If
+                    lX = lX - 1
+                ElseIf .Top <> 0 Then
+                    lValue = .Top
+                    .Top = 0
+                    Select Case lValue
+                    Case TURN_LEFT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize - ModuleSize \ 2
+                        uTo.X = lX * ModuleSize - ModuleSize \ 2
+                        uTo.Y = lY * ModuleSize - ModuleSize
+                        lValue = BEZIER_TO
+                    Case TURN_RIGHT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize - ModuleSize \ 2
+                        uTo.X = lX * ModuleSize + ModuleSize \ 2
+                        uTo.Y = lY * ModuleSize - ModuleSize
+                        lValue = BEZIER_TO
+                    Case WIDE_LEFT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize - ModuleSize
+                        uTo.Y = lY * ModuleSize - ModuleSize
+                        lValue = BEZIER_TO
+                    Case WIDE_RIGHT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize
+                        uTo.X = lX * ModuleSize + ModuleSize
+                        uTo.Y = lY * ModuleSize - ModuleSize
+                        lValue = BEZIER_TO
+                    Case SUPERWIDE_RIGHT
+                        uFrom.X = lX * ModuleSize
+                        uFrom.Y = lY * ModuleSize - ModuleSize \ 2
+                        uTo.X = lX * ModuleSize + ModuleSize * 3 \ 2
+                        uTo.Y = lY * ModuleSize - ModuleSize * 2
+                        lValue = BEZIER_TO
+                    End Select
+                    If lValue = BEZIER_TO Then
+                        pvAppendBezier uPoints, lPos, lSize, uFrom.X, uFrom.Y
+                        pvAppendBezier uPoints, lPos, lSize, uTo.X, uTo.Y, _
+                            uFrom.X, uFrom.Y - COEFF * (uFrom.Y - uTo.Y), _
+                            uTo.X - COEFF * (uTo.X - uFrom.X), uTo.Y
+                    End If
+                    lY = lY - 1
+                Else
+                    lValue = -1
+                End If
+            End With
+            If lValue < 0 Then
+                Exit Do
+            ElseIf lValue = LINE_TO Then
+                pvAppendBezier uPoints, lPos, lSize, lX * ModuleSize, lY * ModuleSize
+            End If
+        Loop
+        If UBound(aSizes) < lNumPolys Then
+            ReDim Preserve aSizes(0 To 2 * UBound(aSizes)) As Long
+        End If
+        aSizes(lNumPolys) = lSize
+        lNumPolys = lNumPolys + 1
+        lPos = lPos + lSize
+        lSize = 0
+    Loop
+    ReDim Preserve aSizes(0 To lNumPolys - 1) As Long
+    ReDim Preserve uPoints(0 To lPos - 1) As POINTAPI
+End Sub
+
+Private Sub pvAppendBezier(uPoints() As POINTAPI, ByVal lPos As Long, lSize As Long, ByVal lX As Long, ByVal lY As Long, _
+        Optional ByVal lAX As Long = -1, Optional ByVal lAY As Long = -1, _
+        Optional ByVal lBX As Long = -1, Optional ByVal lBY As Long = -1)
+    If lSize >= 4 And lAX < 0 And lAY < 0 And lBX < 0 And lBY < 0 Then
+        '--- remove redundant last point if the new one is on the same line
+        If pvPointsInLine(uPoints(lPos + lSize - 4), uPoints(lPos + lSize - 1), lX, lY) Then
+            lSize = lSize - 3
+        End If
+    End If
+    If lSize > 0 Then
+        lSize = lSize + 2
+    End If
+    If UBound(uPoints) < lPos + lSize Then
+        ReDim Preserve uPoints(0 To 2 * UBound(uPoints)) As POINTAPI
+    End If
+    If lSize = 0 Then
+        With uPoints(lPos)
+            .X = lX
+            .Y = lY
+        End With
+    Else
+        With uPoints(lPos + lSize - 2)
+            If lAX < 0 Or lAY < 0 Then
+                .X = uPoints(lPos + lSize - 3).X
+                .Y = uPoints(lPos + lSize - 3).Y
+            Else
+                .X = lAX
+                .Y = lAY
+            End If
+        End With
+        With uPoints(lPos + lSize - 1)
+            If lBX < 0 Or lBY < 0 Then
+                .X = lX
+                .Y = lY
+            Else
+                .X = lBX
+                .Y = lBY
+            End If
+        End With
+        With uPoints(lPos + lSize)
+            .X = lX
+            .Y = lY
+        End With
+    End If
+    lSize = lSize + 1
+End Sub
+#Else
 Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uPoints() As POINTAPI, aSizes() As Long)
     Const TURN_STEPS     As Long = 4
     Const WIDE_STEPS     As Long = 2 * TURN_STEPS
@@ -1657,20 +1957,6 @@ Private Sub pvConstructPolygons(uVectors() As RECT, ByVal ModuleSize As Long, uP
     ReDim Preserve uPoints(0 To lPos - 1) As POINTAPI
 End Sub
 
-Private Function pvFindStartVector(uVectors() As RECT, lX As Long, lY As Long) As Boolean
-    For lY = 0 To UBound(uVectors, 2)
-        For lX = 0 To UBound(uVectors, 1)
-            With uVectors(lX, lY)
-                If .Left <> 0 And .Left <> SKIP_TO Or .Top <> 0 And .Top <> SKIP_TO _
-                        Or .Right <> 0 And .Right <> SKIP_TO Or .Bottom <> 0 And .Bottom <> SKIP_TO Then
-                    pvFindStartVector = True
-                    Exit Function
-                End If
-            End With
-        Next
-    Next
-End Function
-
 Private Sub pvAppendRightTurn(uPoints() As POINTAPI, ByVal lPos As Long, lSize As Long, ByVal lX As Long, ByVal lY As Long, ByVal lSteps As Long)
     Dim lIdx            As Long
     Dim lPrevX          As Long
@@ -1763,7 +2049,7 @@ Private Sub pvAppendLineTo(uPoints() As POINTAPI, ByVal lPos As Long, lSize As L
     End With
     lSize = lSize + 1
 End Sub
-
+#End If
 Private Function pvPointsInLine(uA As POINTAPI, uB As POINTAPI, ByVal lX As Long, ByVal lY As Long) As Boolean
     If uA.X = lX Then
         pvPointsInLine = uB.X = lX
