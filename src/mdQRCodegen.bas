@@ -526,7 +526,7 @@ Public Function QRCodegenResizePicture(pPicture As IPicture, ByVal NewWidth As L
             HM2Pix(pPicture.Width, GetDeviceCaps(hDC, LOGPIXELSX)), _
             HM2Pix(pPicture.Height, GetDeviceCaps(hDC, LOGPIXELSY)), vbSrcCopy)
     Else
-        pPicture.Render CLng(hDC), 0, 0, NewWidth, NewHeight, 0, 0, pPicture.Width, pPicture.Height, ByVal 0
+        pPicture.Render CLng(hDC), 0, 0, NewWidth, NewHeight, 0, pPicture.Height, pPicture.Width, -pPicture.Height, ByVal 0
     End If
     Call SelectObject(hDC, hPrevDib)
     hPrevDib = 0

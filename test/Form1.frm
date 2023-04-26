@@ -67,6 +67,13 @@ Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
             Clipboard.Clear
             Clipboard.SetData QRCodegenConvertToPicture(baBarCode, vbRed, ModuleSize:=lModuleSize, SquareModules:=(Check1.Value = vbChecked))
         End If
+    ElseIf KeyCode = 67 And Shift = vbAltMask Then
+        If QRCodegenEncode(Text1.Text, baBarCode) Then
+            lQrSize = QRCodegenGetSize(baBarCode)
+            lModuleSize = Int((Image1.Width * 15) / (lQrSize * Screen.TwipsPerPixelX) + 0.5)
+            Clipboard.Clear
+            Clipboard.SetData QRCodegenResizePicture(QRCodegenResizePicture(QRCodegenConvertToPicture(baBarCode, vbBlue, ModuleSize:=lModuleSize, SquareModules:=(Check1.Value = vbChecked)), 2000, 2000), 500, 500)
+        End If
     End If
 End Sub
 
