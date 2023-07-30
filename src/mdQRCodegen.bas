@@ -1290,7 +1290,12 @@ Private Function pvFinderPenaltyAddHistory(ByVal lCurrentRunLength As Long, aRun
         lCurrentRunLength = lCurrentRunLength + lQrSize
     End If
     Debug.Assert UBound(aRunHistory) + 1 = 7
-    Call CopyMemory(aRunHistory(1), aRunHistory(0), 6 * LenB(aRunHistory(0)))
+    aRunHistory(6) = aRunHistory(5)
+    aRunHistory(5) = aRunHistory(4)
+    aRunHistory(4) = aRunHistory(3)
+    aRunHistory(3) = aRunHistory(2)
+    aRunHistory(2) = aRunHistory(1)
+    aRunHistory(1) = aRunHistory(0)
     aRunHistory(0) = lCurrentRunLength
 End Function
 
