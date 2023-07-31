@@ -57,7 +57,6 @@ End Type
 '=========================================================================
 
 #If HasPtrSafe Then
-Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As LongPtr)
 Private Declare PtrSafe Function CreateEnhMetaFile Lib "gdi32" Alias "CreateEnhMetaFileW" (ByVal hdcRef As LongPtr, ByVal lpFileName As LongPtr, ByVal lpRect As LongPtr, ByVal lpDescription As LongPtr) As LongPtr
 Private Declare PtrSafe Function CloseEnhMetaFile Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
 Private Declare PtrSafe Function GetStockObject Lib "gdi32" (ByVal nIndex As Long) As Long
@@ -81,7 +80,6 @@ Private Declare PtrSafe Function SetMapMode Lib "gdi32" (ByVal hCD As LongPtr, B
 Private Enum LongPtr
     [_]
 End Enum
-Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As LongPtr)
 Private Declare Function CreateEnhMetaFile Lib "gdi32" Alias "CreateEnhMetaFileW" (ByVal hdcRef As LongPtr, ByVal lpFileName As LongPtr, ByVal lpRect As LongPtr, ByVal lpDescription As LongPtr) As LongPtr
 Private Declare Function CloseEnhMetaFile Lib "gdi32" (ByVal hDC As LongPtr) As LongPtr
 Private Declare Function GetStockObject Lib "gdi32" (ByVal nIndex As Long) As Long
@@ -905,11 +903,10 @@ Private Sub pvReedSolomonComputeRemainder( _
     ReDim baResult(0 To lDegree - 1) As Byte
     For lIdx = lDataPos To lDataPos + lDataSize - 1
         bFactor = baData(lIdx) Xor baResult(0)
-        Call CopyMemory(baResult(0), baResult(1), lDegree - 1)
-        baResult(lDegree - 1) = 0
-        For lJdx = 0 To lDegree - 1
-            baResult(lJdx) = baResult(lJdx) Xor pvReedSolomonMultiply(baGen(lJdx), bFactor)
+        For lJdx = 0 To lDegree - 2
+            baResult(lJdx) = baResult(lJdx + 1) Xor pvReedSolomonMultiply(baGen(lJdx), bFactor)
         Next
+        baResult(lDegree - 1) = pvReedSolomonMultiply(baGen(lJdx), bFactor)
     Next
 End Sub
 
