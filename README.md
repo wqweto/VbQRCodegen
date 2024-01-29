@@ -22,6 +22,10 @@ Note that you can stretch/zoom the returned picture to any size without loss of 
 
 For compatibility with image controls on forms/reports you can use `QRCodegenConvertToData` function like this:
 ```
+    Image0.PictureData = QRCodegenConvertToData(QRCodegenBarcode("Sample text"))
+```
+If this does not work in your version of MS Access (for some reason) then you can try converting QR Code to a bitmap instead like this:
+```
     Image0.PictureData = QRCodegenConvertToData(QRCodegenBarcode("Sample text"), 500, 500)
 ```
-Note that this produces bitmap picture of the QR Code so might need to tweak output size parameters.
+Note that this produces 500x500 bitmap picture of the QR Code so might need to tweak output size parameters.

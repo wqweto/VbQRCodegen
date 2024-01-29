@@ -440,6 +440,7 @@ Public Function QRCodegenConvertToData(ByVal pPicture As IPicture, Optional ByVa
     Dim cSize           As Currency
     Dim baOutput()      As Byte
     Dim hResult         As Long
+    Dim lOffset         As Long
     
     If pPicture Is Nothing Then
         baOutput = vbNullString
@@ -449,6 +450,7 @@ Public Function QRCodegenConvertToData(ByVal pPicture As IPicture, Optional ByVa
         '--- super sample to 4x4 for cheap anti-aliasing
         Set pPicture = QRCodegenResizePicture(pPicture, NewWidth * 4, NewHeight * 4)
         Set pPicture = QRCodegenResizePicture(pPicture, NewWidth, NewHeight)
+        lOffset = 8
     End If
     Set pStream = SHCreateMemStream(ByVal 0, 0)
     If IID_IPersistStream(0) = 0 Then
@@ -466,18 +468,24 @@ Public Function QRCodegenConvertToData(ByVal pPicture As IPicture, Optional ByVa
     If hResult < 0 Then
         Err.Raise hResult, "IStream.Seek(STREAM_SEEK_END)"
     End If
-    If cSize <= 8 Then
+    If cSize * 10000@ <= lOffset Then
         baOutput = vbNullString
         GoTo QH
     End If
-    ReDim baOutput(0 To cSize * 10000@ - 9) As Byte
-    hResult = DispCallByVtbl(pStream, IDX_SEEK, 0.0008@, STREAM_SEEK_SET, VarPtr(cSize))
+    ReDim baOutput(0 To cSize * 10000@ - lOffset - 1) As Byte
+    hResult = DispCallByVtbl(pStream, IDX_SEEK, CCur(lOffset / 10000@), STREAM_SEEK_SET, VarPtr(cSize))
     If hResult < 0 Then
         Err.Raise hResult, "IStream.Seek(STREAM_SEEK_SET)"
     End If
     hResult = DispCallByVtbl(pStream, IDX_READ, VarPtr(baOutput(0)), UBound(baOutput) + 1, VarPtr(cSize))
     If hResult < 0 Then
         Err.Raise hResult, "IStream.Read"
+    End If
+    If lOffset = 0 Then
+        baOutput(0) = &HE
+        For lOffset = 1 To 7
+            baOutput(lOffset) = 0
+        Next
     End If
 QH:
     QRCodegenConvertToData = baOutput
