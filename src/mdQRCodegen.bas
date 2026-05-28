@@ -189,6 +189,7 @@ Public Function QRCodegenEncode(TextOrByteArray As Variant, baQrCode() As Byte, 
             Optional ByVal MaxVersion As Long = VERSION_MAX, _
             Optional ByVal Mask As QRCodegenMask = QRCodegenMask_AUTO, _
             Optional ByVal BoostEcl As Boolean = True) As Boolean
+    Const ECI_CHARSET_UTF8 As Long = 26
     Dim baData()        As Byte
     Dim lDataLen        As Long
     Dim sText           As String
@@ -226,10 +227,15 @@ Public Function QRCodegenEncode(TextOrByteArray As Variant, baQrCode() As Byte, 
         Else
             baData = pvToUtf8Array(sText)
             lDataLen = UBound(baData) + 1
+            If lDataLen <> Len(sText) Then
+                '--- Extended Channel Interpretation for UTF-8 content
+                ReDim uSegments(0 To 1) As QRCodegenSegment
+                uSegments(0) = QRCodegenMakeEci(ECI_CHARSET_UTF8)
+            End If
             If QRCodegenCalcSegmentBufferSize(QRCodegenMode_BYTE, lDataLen) > lBufLen Then
                 GoTo QH
             End If
-            uSegments(0) = QRCodegenMakeBytes(baData)
+            uSegments(UBound(uSegments)) = QRCodegenMakeBytes(baData)
         End If
     End If
     QRCodegenEncode = QRCodegenEncodeSegments(uSegments, baQrCode, Ecl, MinVersion, MaxVersion, Mask, BoostEcl)
